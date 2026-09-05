@@ -1,6 +1,6 @@
 package com.gamezone.model;
 
-public class Person {
+abstract public class Person {
     private String name;
     private String id;
     private String phone;
