@@ -48,4 +48,25 @@ public class Sale {
     public void setItems(List<SaleItem> items) {
         this.items = items;
     }
+
+    //methods
+
+    public void addItem(SaleItem item) {
+        this.items.add(item);
+    }
+
+    public double calculateTotal() {
+        double total = 0.0;
+        for (SaleItem item : items) {
+            total += item.calculateSubtotal();
+        }
+        return total;
+    }
+
+    public void register() {
+        // in develop
+        if (this.items == null || this.items.isEmpty()) {
+            throw new IllegalStateException("A sale must contain at least one product to be registered.");
+        }
+    }
 }
