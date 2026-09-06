@@ -39,7 +39,7 @@ public class PersonRepository {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
 
-                if (parts.length == 5) {
+                if (parts.length == 4) {
                     String name = parts[0];
                     String phone = parts[1];
                     String id = parts[2];
@@ -62,7 +62,7 @@ public class PersonRepository {
                 writer.write(sellerLine(s));
                 writer.newLine();
             }
-            System.out.println("Customers saved successfully in " + customerCSV);
+            System.out.println("Sellers saved successfully in " + sellerCSV);
         } catch (IOException e) {
             System.err.println("Error saving the CSV file: " + e.getMessage());
         }
@@ -82,8 +82,8 @@ public class PersonRepository {
                     String id = parts[2];
                     String employeeCode = parts[3];
                     String workShift = parts[4];
-                    Seller customer = new Seller(name,phone,id,employeeCode,workShift);
-                    sellers.add(customer);
+                    Seller seller = new Seller(name,phone,id,employeeCode,workShift);
+                    sellers.add(seller);
                 }
             }
             System.out.println("Data successfully loaded from " + sellerCSV);
