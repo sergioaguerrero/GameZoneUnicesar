@@ -88,7 +88,7 @@ public class SaleRepository {
         return sales;
     }
 
-    // another aux methods to loadSales
+    // Another aux methods to loadSales
 
     private Customer findCustomerById(List<Customer> customers, String id) {
         for (Customer c : customers) {
