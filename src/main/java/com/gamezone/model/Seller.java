@@ -4,8 +4,8 @@ public class Seller extends Person{
     private String employeeCode;
     private String workShift;
 
-    public Seller(String name, String phone, String identification, String employeeCode, String workShift) {
-        super(name, phone, identification);
+    public Seller(String name, String phone, String id, String employeeCode, String workShift) {
+        super(name, phone, id);
         this.employeeCode = employeeCode;
         this.workShift = workShift;
     }
