@@ -2,6 +2,7 @@ package com.gamezone.model;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Sale {
     private LocalDate date;
