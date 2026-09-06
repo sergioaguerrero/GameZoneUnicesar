@@ -1,11 +1,9 @@
 package com.gamezone.persistence;
 
-import com.gamezone.model.Sale;
-import com.gamezone.model.SaleItem;
+import com.gamezone.model.*;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,4 +43,71 @@ public class SaleRepository {
         }
     }
 
+    public List<Sale> loadSales(List<Customer> allCustomers, List<Seller> allSellers, List<Product> allProducts) {
+        List<Sale> sales = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(saleCSV))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] splits = line.split(",");
+
+                if (splits.length >= 4) {
+                    LocalDate date = LocalDate.parse(splits[0]);
+                    String customerId = splits[1];
+                    String sellerId = splits[2];
+                    String itemsData = splits[3];
+
+                    // To search objects by id
+                    Customer customer = findCustomerById(allCustomers, customerId);
+                    Seller seller = findSellerById(allSellers, sellerId);
+
+                    if (customer != null && seller != null) {
+                        Sale sale = new Sale(date, customer, seller);
+
+                        // To load item list separating by ";"
+                        String[] itemsArray = itemsData.split(";");
+                        for (String itemStr : itemsArray) {
+                            String[] itemParts = itemStr.split(":");
+                            String productId = itemParts[0];
+                            int quantity = Integer.parseInt(itemParts[1]);
+
+                            Product product = findProductById(allProducts, productId);
+                            if (product != null) {
+                                sale.addItem(new SaleItem(product, quantity));
+                            }
+                        }
+                        sales.add(sale);
+                    }
+                }
+            }
+            System.out.println("Sales successfully loaded from " + saleCSV);
+        } catch (IOException e) {
+            System.err.println("The file could not be read: " + e.getMessage());
+        }
+
+        return sales;
+    }
+
+    // another aux methods to loadSales
+
+    private Customer findCustomerById(List<Customer> customers, String id) {
+        for (Customer c : customers) {
+            if (c.getId().equals(id)) return c;
+        }
+        return null;
+    }
+
+    private Seller findSellerById(List<Seller> sellers, String id) {
+        for (Seller s : sellers) {
+            if (s.getId().equals(id)) return s;
+        }
+        return null;
+    }
+
+    private Product findProductById(List<Product> products, String id) {
+        for (Product p : products) {
+            if (p.getProductId().equals(id)) return p;
+        }
+        return null;
+    }
 }
