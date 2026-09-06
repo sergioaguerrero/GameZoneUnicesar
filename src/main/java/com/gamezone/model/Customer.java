@@ -11,7 +11,10 @@ public class Customer extends Person{
         this.mail = mail;
         this.purchaseHistory = purchaseHistory;
     }
-
+    public Customer(String name, String phone, String id, String mail) {
+        super(name, phone, id);
+        this.mail = mail;
+    }
     public String getMail() {
         return mail;
     }
