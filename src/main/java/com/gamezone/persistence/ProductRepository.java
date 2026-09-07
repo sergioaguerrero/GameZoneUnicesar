@@ -1,52 +1,115 @@
 package com.gamezone.persistence;
 
+import com.gamezone.model.Console;
 import com.gamezone.model.Product;
+import com.gamezone.model.VideoGame;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Handles file-based persistence for {@link Product} objects. Responsible only
- * for saving and loading the list of products to/from disk. Contains no
- * business rules; those belong to the service layer.
- *
- * Uses Java serialization so that both {@code VideoGame} and {@code Console}
- * instances (polymorphic subtypes of {@code Product}) can be stored and
- * restored transparently in a single file.
+ * Handles file-based persistence of {@link Product} instances as CSV records,
+ * using a discriminator column to distinguish between video games and consoles.
+ * Contains no business rules; those belong to the service layer.
  */
 public class ProductRepository {
 
-    private final String filePath;
+    private static final String FILE_PATH = "data/products.csv";
+    private static final String VIDEOGAME_TYPE = "VIDEOGAME";
+    private static final String CONSOLE_TYPE = "CONSOLE";
 
-    public ProductRepository(String filePath) {
-        this.filePath = filePath;
-    }
-
+    /**
+     * Overwrites the CSV file with the given list of products.
+     *
+     * @param products the complete list of products to persist
+     */
     public void saveAll(List<Product> products) {
-        File file = new File(filePath);
-        File parent = file.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file))) {
-            out.writeObject(new ArrayList<>(products));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
+            for (Product product : products) {
+                writer.write(toCsvLine(product));
+                writer.newLine();
+            }
         } catch (IOException e) {
-            throw new RuntimeException("Error saving products to file: " + filePath, e);
+            throw new RuntimeException("Failed to save products to " + FILE_PATH, e);
         }
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Reads the CSV file and reconstructs the list of products, choosing the
+     * concrete subclass based on the discriminator column.
+     *
+     * @return the list of products found in the file, or an empty list if the
+     * file does not exist
+     */
     public List<Product> loadAll() {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            return new ArrayList<>();
+        List<Product> products = new ArrayList<>();
+        Path path = Path.of(FILE_PATH);
+        if (!Files.exists(path)) {
+            return products;
         }
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
-            Object data = in.readObject();
-            return (List<Product>) data;
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Error loading products from file: " + filePath, e);
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.isBlank()) {
+                    continue;
+                }
+                products.add(fromCsvLine(line));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load products from " + FILE_PATH, e);
         }
+        return products;
+    }
+
+    private String toCsvLine(Product product) {
+        if (product instanceof VideoGame videoGame) {
+            return String.join(",",
+                    VIDEOGAME_TYPE,
+                    videoGame.getProductId(),
+                    videoGame.getTitle(),
+                    String.valueOf(videoGame.getPrice()),
+                    String.valueOf(videoGame.getStockQuantity()),
+                    videoGame.getPlatform(),
+                    videoGame.getGenre(),
+                    videoGame.getAgeRating());
+        }
+        if (product instanceof Console console) {
+            return String.join(",",
+                    CONSOLE_TYPE,
+                    console.getProductId(),
+                    console.getTitle(),
+                    String.valueOf(console.getPrice()),
+                    String.valueOf(console.getStockQuantity()),
+                    console.getBrand(),
+                    console.getModel(),
+                    String.valueOf(console.getGeneration()));
+        }
+        throw new IllegalArgumentException("Unsupported product type: " + product.getClass());
+    }
+
+    private Product fromCsvLine(String line) {
+        String[] fields = line.split(",", -1);
+        String type = fields[0];
+        String productId = fields[1];
+        String title = fields[2];
+        double price = Double.parseDouble(fields[3]);
+        int stockQuantity = Integer.parseInt(fields[4]);
+
+        if (VIDEOGAME_TYPE.equals(type)) {
+            return new VideoGame(productId, title, price, stockQuantity,
+                    fields[5], fields[6], fields[7]);
+        }
+        if (CONSOLE_TYPE.equals(type)) {
+            return new Console(productId, title, price, stockQuantity,
+                    fields[5], fields[6], Integer.parseInt(fields[7]));
+        }
+        throw new IllegalArgumentException("Unknown product type in CSV: " + type);
     }
 }

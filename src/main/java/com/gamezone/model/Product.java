@@ -1,7 +1,4 @@
-
 package com.gamezone.model;
-
-import java.io.Serializable;
 
 /**
  * Abstract base class that represents a general product commercialized by
@@ -12,9 +9,7 @@ import java.io.Serializable;
  * category. Concrete subclasses must provide their own implementation of
  * {@link #getFullDescription()}.
  */
-public abstract class Product implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public abstract class Product {
 
     private String productId;
     private String title;
