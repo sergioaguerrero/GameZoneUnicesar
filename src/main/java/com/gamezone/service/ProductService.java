@@ -62,14 +62,53 @@ public class ProductService {
                 .map(p -> p.hasEnoughStock(quantity))
                 .orElse(false);
     }
-        public void updateStock(String productId, int quantity) {
+
+    public void updateStock(String productId, int quantity) {
         Product product = findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Product not found: " + productId));
+                "Product not found: " + productId));
         product.decreaseStock(quantity);
         persist();
     }
-            private void validateNewProductId(String productId) {
+
+    /**
+     * Updates the common attributes of an existing product (title, price and
+     * stock quantity). Does not modify type-specific attributes.
+     *
+     * @param productId the id of the product to update
+     * @param title the new title
+     * @param price the new price
+     * @param stockQuantity the new stock quantity
+     * @return true if the product was found and updated, false otherwise
+     */
+    public boolean updateProduct(String productId, String title, double price, int stockQuantity) {
+        Optional<Product> found = findById(productId);
+        if (found.isEmpty()) {
+            return false;
+        }
+        Product product = found.get();
+        product.setTitle(title);
+        product.setPrice(price);
+        product.setStockQuantity(stockQuantity);
+        persist();
+        return true;
+    }
+
+    /**
+     * Removes a product from the inventory by its id.
+     *
+     * @param productId the id of the product to remove
+     * @return true if a product was found and removed, false otherwise
+     */
+    public boolean deleteProduct(String productId) {
+        boolean removed = products.removeIf(p -> p.getProductId().equals(productId));
+        if (removed) {
+            persist();
+        }
+        return removed;
+    }
+
+    private void validateNewProductId(String productId) {
         if (findById(productId).isPresent()) {
             throw new IllegalArgumentException(
                     "A product with id " + productId + " already exists");
