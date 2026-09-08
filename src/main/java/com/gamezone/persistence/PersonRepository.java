@@ -93,5 +93,20 @@ public class PersonRepository {
 
         return sellers;
     }
+
+    public void deleteSeller(List<Seller> sellers,String id){
+        for (Seller s:sellers){
+            sellers.remove(s);
+            saveSeller(sellers);
+            break;
+        }
+    }
+
+    public void deleteCustomer(List<Customer> customers,String id){
+        for(Customer c:customers){
+            customers.remove(c);
+            saveCustomer(customers);
+        }
+    }
 }
 
