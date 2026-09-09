@@ -17,7 +17,9 @@ flowchart TD
 
     subgraph Persistence [Layer persistence]
         direction TB
-        FileManager
+        PersonRepository
+        SaleRepository
+        ProductRepository
     end
 
     subgraph Model [Layer model]
