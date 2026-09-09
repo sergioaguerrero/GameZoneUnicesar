@@ -35,7 +35,7 @@ public class Main {
             ConsoleMenu consoleMenu = new ConsoleMenu(productService, personService, saleService);
             consoleMenu.start();
         } catch (RuntimeException e) {
-            System.err.println("Error fatal: " + e.getMessage());
+            System.err.println("Fatal error: " + e.getMessage());
             System.exit(1);
         }
     }
