@@ -22,19 +22,35 @@ public class Seller extends Person{
         this.employeeCode = employeeCode;
         this.workShift = workShift;
     }
-
+    /**
+     * Gets the unique employee code assigned to the seller.
+     *
+     * @return The employee code.
+     */
     public String getEmployeeCode() {
         return employeeCode;
     }
-
+    /**
+     * Sets or updates the employee code for the seller.
+     *
+     * @param employeeCode The new employee code.
+     */
     public void setEmployeeCode(String employeeCode) {
         this.employeeCode = employeeCode;
     }
-
+    /**
+     * Gets the work shift schedule assigned to the seller.
+     *
+     * @return The work shift.
+     */
     public String getWorkShift() {
         return workShift;
     }
-
+    /**
+     * Sets or updates the work shift schedule for the seller.
+     *
+     * @param workShift The new work shift.
+     */
     public void setWorkShift(String workShift) {
         this.workShift = workShift;
     }

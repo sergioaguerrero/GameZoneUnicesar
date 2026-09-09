@@ -35,14 +35,27 @@ public class Customer extends Person{
         super(name, phone, id);
         this.mail = mail;
     }
+    /**
+     * Gets the email address of the person.
+     *
+     * @return The email address.
+     */
     public String getMail() {
         return mail;
     }
-
+    /**
+     * Sets or updates the email address of the customer.
+     *
+     * @param mail The new email address.
+     */
     public void setMail(String mail) {
         this.mail = mail;
     }
-
+    /**
+     * Gets the list of sales representing the customer's purchase history.
+     *
+     * @return The list of past sales.
+     */
     public List<Sale> getPurchaseHistory() {
         return purchaseHistory;
     }
