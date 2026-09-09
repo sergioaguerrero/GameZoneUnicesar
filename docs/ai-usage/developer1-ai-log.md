@@ -55,3 +55,94 @@ Suggested solution: Identified the cause in pom.xml (maven.compiler.source/targe
 
 Key lesson: Learned to distinguish between a code error and a build/environment configuration error, and the importance of not modifying shared configuration files unilaterally in a team Git workflow — instead communicating the issue to the responsible teammate.
 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Registro de Consultas con IA — Desarrollador 1 (Módulo de Producto)
+
+Estudiante: Isaac David Mattos Botello ID del estudiante: 1042854691 Rol: Desarrollador 1 — Módulo de Producto Herramienta utilizada: Claude (Anthropic)
+
+Este registro documenta cada consulta significativa realizada durante el desarrollo del módulo de producto, siguiendo la estructura requerida por la asignación: problema planteado → solución sugerida → aprendizaje clave.
+
+Entrada 1 — Error del compilador al extender una clase abstracta
+
+Problema planteado: Después de crear VideoGame extends Product, NetBeans mostró el siguiente error:
+
+"VideoGame is not abstract and does not override abstract method getFullDescription() in Product."
+
+Solución sugerida: Se explicó que el error era el comportamiento esperado: una subclase concreta debe implementar todos los métodos abstractos heredados de su clase padre. La solución consistió en agregar una implementación de getFullDescription() con la anotación @Override en VideoGame y, posteriormente, también en Console.
+
+Aprendizaje clave: El compilador de Java hace cumplir el “contrato” definido por un método abstracto. Una clase concreta no puede compilar si deja sin implementar un método abstracto heredado. Esto reforzó que el diseño es seguro, ya que es imposible olvidar accidentalmente la lógica de descripción.
+
+Entrada 2 — Arquitectura por capas y persistencia en archivos
+
+Problema planteado: ¿Cómo guardar en disco una lista de productos (polimórfica, con objetos VideoGame y Console) manteniendo ProductService completamente independiente del modo en que se almacenan los datos?
+
+Solución sugerida: Se propuso crear ProductRepository como la única clase responsable de leer y escribir archivos, exponiendo únicamente dos métodos públicos:
+
+saveAll(List<Product>)
+
+loadAll()
+
+ProductService utiliza esos métodos sin conocer el formato de almacenamiento.
+
+Aprendizaje clave: Separar la persistencia de la lógica de negocio permite cambiar el mecanismo de almacenamiento sin modificar las capas de servicio ni de modelo. Es un ejemplo práctico de la arquitectura por capas exigida en el proyecto: servicio → persistencia, nunca interfaz → persistencia.
+
+Entrada 3 — Cambio de serialización a CSV
+
+Problema planteado: Tras comparar la implementación inicial (serialización con ObjectOutputStream y ObjectInputStream) con el enfoque basado en CSV utilizado por un compañero, se decidió migrar ProductRepository a un formato CSV legible por humanos.
+
+Solución sugerida: Reescribir los métodos saveAll() y loadAll() utilizando BufferedWriter y BufferedReader, además de crear dos métodos privados auxiliares:
+
+toCsvLine()
+
+fromCsvLine()
+
+Se añadió una columna discriminadora (VIDEOGAME / CONSOLE) y se utilizó instanceof con pattern matching para identificar el tipo concreto del producto.
+
+if (product instanceof VideoGame videoGame) {
+    ...
+}
+
+Aprendizaje clave: La arquitectura por capas demostró nuevamente su utilidad: el cambio completo del sistema de persistencia solo requirió modificaciones en ProductRepository. Las clases Product, VideoGame, Console y ProductService permanecieron intactas, salvo una limpieza opcional: eliminar la interfaz Serializable de Product.
+
+Entrada 4 — Git: resolución del estado "detached HEAD"
+
+Problema planteado: Después de cambiar a una rama remota (origin/develop y posteriormente origin/feature/product-module) desde la interfaz gráfica de Git, apareció repetidamente el mensaje:
+
+"You are no longer on a local branch."
+
+Solución sugerida: Se explicó que ese mensaje corresponde al estado detached HEAD: el repositorio está situado sobre un commit específico, pero ninguna rama local apunta a él. La solución fue crear una nueva rama mediante:
+
+Branch → Create Branch
+
+utilizando Revision Expression: HEAD (y la opción Reset cuando el nombre de la rama ya existía).
+
+Aprendizaje clave: Se comprendió la diferencia entre un commit (un punto del historial) y una rama (un puntero móvil hacia un commit). Estar sobre un commit no significa estar trabajando dentro de una rama hasta que esta se crea explícitamente.
+
+Entrada 5 — Integración de cambios del equipo sin perder trabajo local
+
+Problema planteado: Era necesario incorporar al módulo feature/product-module el trabajo terminado por un compañero (clases del módulo de personas y actualización del .gitignore) sin perder cambios locales aún no confirmados.
+
+Solución sugerida: Se recomendó un proceso de integración en dos pasos:
+
+Actualizar la rama local develop con origin/develop mediante Fetch + Merge.
+
+Fusionar esa develop actualizada dentro de feature/product-module mediante Merge → Local Merge.
+
+Además, se enfatizó la importancia de hacer commit y push de todos los cambios pendientes antes de cambiar de rama.
+
+Aprendizaje clave: En un proyecto colaborativo, la integración se realiza a través de la rama compartida develop, no directamente entre ramas feature. Esto sigue el modelo Git Flow establecido para el desarrollo del proyecto.
+
+Entrada 6 — Diagnóstico de incompatibilidad entre Maven y JDK
+
+Problema planteado: La opción Clean and Build falló con el error:
+
+invalid target release: 26
+
+El problema no estaba relacionado con el código desarrollado en el módulo de producto.
+
+Solución sugerida: Se identificó que la causa estaba en el archivo pom.xml, donde las propiedades maven.compiler.source y maven.compiler.target estaban configuradas con la versión 26, incompatible con el JDK instalado localmente. Se propuso realizar una prueba temporal cambiando la versión a 25, dejando claro que ese cambio no debía confirmarse (commit) porque pom.xml es un archivo compartido administrado por el Líder Técnico.
+
+Aprendizaje clave: Se aprendió a diferenciar un error de programación de un problema de configuración del entorno de compilación, así como la importancia de no modificar unilateralmente archivos de configuración compartidos dentro de un flujo de trabajo colaborativo con Git.
