@@ -7,19 +7,25 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Handles file-based persistence for Sale objects using a CSV format.
+ */
 public class SaleRepository {
     private static final String saleCSV = "data/sales.csv";
 
-    // This method serializes the sale into a text line.
+    /**
+     * Serializes a Sale object into a CSV formatted text line.
+     *
+     * @param sale the sale to serialize
+     * @return the serialized string representing the sale
+     */
     public String saleLine(Sale sale){
         StringBuilder sb = new StringBuilder();
 
-        // To save date with ID Costumer and ID Seller
         sb.append(sale.getDate().toString()).append(",");
         sb.append(sale.getCustomer().getId()).append(",");
         sb.append(sale.getSeller().getId()).append(",");
 
-        // To serialize with format (idProduct:quantity;)
         List<String> itemsList = new ArrayList<>();
         for (SaleItem item : sale.getItems()){
             itemsList.add(item.getProduct().getProductId() + ":" + item.getQuantity());
@@ -29,8 +35,11 @@ public class SaleRepository {
         return sb.toString();
     }
 
-    // To save the sales into the csv
-
+    /**
+     * Saves a list of sales into the CSV file.
+     *
+     * @param sales the list of sales to be saved
+     */
     public void saveSales(List<Sale> sales){
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(saleCSV))){
             for (Sale sale : sales){
@@ -43,6 +52,14 @@ public class SaleRepository {
         }
     }
 
+    /**
+     * Loads the sales from the CSV file and reconstructs the objects.
+     *
+     * @param allCustomers the master list of customers
+     * @param allSellers   the master list of sellers
+     * @param allProducts  the master list of products
+     * @return a list of reconstructed Sale objects
+     */
     public List<Sale> loadSales(List<Customer> allCustomers, List<Seller> allSellers, List<Product> allProducts) {
         List<Sale> sales = new ArrayList<>();
 
@@ -57,14 +74,12 @@ public class SaleRepository {
                     String sellerId = splits[2];
                     String itemsData = splits[3];
 
-                    // To search objects by id
                     Customer customer = findCustomerById(allCustomers, customerId);
                     Seller seller = findSellerById(allSellers, sellerId);
 
                     if (customer != null && seller != null) {
                         Sale sale = new Sale(date, customer, seller);
 
-                        // To load item list separating by ";"
                         String[] itemsArray = itemsData.split(";");
                         for (String itemStr : itemsArray) {
                             String[] itemParts = itemStr.split(":");
@@ -88,8 +103,13 @@ public class SaleRepository {
         return sales;
     }
 
-    // Another aux methods to loadSales
-
+    /**
+     * Finds a customer by their ID within a given list.
+     *
+     * @param customers the list of customers to search
+     * @param id        the ID of the customer
+     * @return the Customer object if found, or null otherwise
+     */
     private Customer findCustomerById(List<Customer> customers, String id) {
         for (Customer c : customers) {
             if (c.getId().equals(id)) return c;
@@ -97,6 +117,13 @@ public class SaleRepository {
         return null;
     }
 
+    /**
+     * Finds a seller by their ID within a given list.
+     *
+     * @param sellers the list of sellers to search
+     * @param id      the ID of the seller
+     * @return the Seller object if found, or null otherwise
+     */
     private Seller findSellerById(List<Seller> sellers, String id) {
         for (Seller s : sellers) {
             if (s.getId().equals(id)) return s;
@@ -104,6 +131,13 @@ public class SaleRepository {
         return null;
     }
 
+    /**
+     * Finds a product by its ID within a given list.
+     *
+     * @param products the list of products to search
+     * @param id       the ID of the product
+     * @return the Product object if found, or null otherwise
+     */
     private Product findProductById(List<Product> products, String id) {
         for (Product p : products) {
             if (p.getProductId().equals(id)) return p;

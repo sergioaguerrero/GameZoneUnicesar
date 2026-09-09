@@ -6,29 +6,45 @@ import com.gamezone.persistence.SaleRepository;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Contains the business rules related to sales management.
+ */
 public class SaleService {
     private final SaleRepository saleRepository;
     private final PersonService personService;
     private final ProductService productService;
 
-    // Initialize constructor to inject the sales repository
+    /**
+     * Initializes the SaleService with the required repositories and services.
+     *
+     * @param saleRepository the repository handling sale persistence
+     * @param personService  the service handling customers and sellers
+     * @param productService the service handling products and inventory
+     */
     public SaleService(SaleRepository saleRepository, PersonService personService, ProductService productService) {
         this.saleRepository = saleRepository;
         this.personService = personService;
         this.productService = productService;
     }
 
+    /**
+     * Registers a new sale by validating the actors, verifying product stock,
+     * creating the transaction, decreasing stock, and saving it to the repository.
+     *
+     * @param customerId the ID of the customer making the purchase
+     * @param sellerId   the ID of the seller handling the transaction
+     * @param items      the list of items to be purchased
+     * @return true if the sale was successfully registered, false otherwise
+     */
     public boolean registerSale(String customerId, String sellerId, List<SaleItem> items) {
         Customer customer = personService.findCustomer(customerId);
         Seller seller = personService.findSeller(sellerId);
 
-        // Validations to see if customer or seller exist
         if (customer == null || seller == null) {
             System.err.println("Customer or seller don't exist");
             return false;
         }
 
-        // Validation to see the available stock
         for (SaleItem item : items) {
             String productId = item.getProduct().getProductId();
             if (!productService.hasEnoughStock(productId, item.getQuantity())) {
@@ -37,13 +53,11 @@ public class SaleService {
             }
         }
 
-        // Create the sale
         Sale newSale = new Sale(LocalDate.now(), customer, seller);
         for (SaleItem item : items) {
             newSale.addItem(item);
         }
 
-        // Business rules validations
         try {
             newSale.register();
         } catch (IllegalArgumentException e) {
@@ -51,17 +65,14 @@ public class SaleService {
             return false;
         }
 
-        // Getting the lists form PersonService and ProductService
         List<Customer> customers = personService.listCustomer();
         List<Seller> sellers = personService.listSeller();
         List<Product> products = productService.listAllProducts();
 
-        // Load history add the new sale and upload the csv
         List<Sale> existingSales = saleRepository.loadSales(customers, sellers, products);
         existingSales.add(newSale);
         saleRepository.saveSales(existingSales);
 
-        // Persistently discount the stock using the ProductService
         for (SaleItem item : items) {
             productService.updateStock(item.getProduct().getProductId(), item.getQuantity());
         }
