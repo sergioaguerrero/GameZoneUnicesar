@@ -68,6 +68,16 @@ public class ProductRepository {
         return products;
     }
 
+    /**
+     * Converts a single product into its CSV line representation, using a
+     * discriminator column ("VIDEOGAME" or "CONSOLE") followed by the product's
+     * attributes.
+     *
+     * @param product the product to convert
+     * @return the CSV line representing the product
+     * @throws IllegalArgumentException if the product's concrete type is not
+     * supported
+     */
     private String toCsvLine(Product product) {
         if (product instanceof VideoGame videoGame) {
             return String.join(",",
@@ -94,6 +104,15 @@ public class ProductRepository {
         throw new IllegalArgumentException("Unsupported product type: " + product.getClass());
     }
 
+    /**
+     * Parses a single CSV line and reconstructs the corresponding concrete
+     * {@link Product} subclass based on its discriminator column.
+     *
+     * @param line the CSV line to parse
+     * @return the reconstructed product
+     * @throws IllegalArgumentException if the discriminator column does not
+     * match a known product type
+     */
     private Product fromCsvLine(String line) {
         String[] fields = line.split(",", -1);
         String type = fields[0];
