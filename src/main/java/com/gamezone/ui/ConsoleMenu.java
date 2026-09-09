@@ -18,7 +18,7 @@ import java.util.Scanner;
 
 /**
  * Console-based user interface for GameZone Unicesar, displaying menus in
- * Spanish and delegating all business operations to the injected services.
+ * English and delegating all business operations to the injected services.
  * This class contains no business rules of its own; it only reads and
  * validates user input, calls the appropriate service, and prints the
  * results. Every listing is numbered (1..n) to make items easier to
@@ -54,11 +54,11 @@ public class ConsoleMenu {
         while (running) {
             System.out.println();
             System.out.println("===== GameZone Unicesar =====");
-            System.out.println("1. Gestion de productos");
-            System.out.println("2. Gestion de personas");
-            System.out.println("3. Gestion de ventas");
-            System.out.println("0. Salir");
-            System.out.print("Seleccione una opcion: ");
+            System.out.println("1. Product management");
+            System.out.println("2. Person management");
+            System.out.println("3. Sale management");
+            System.out.println("0. Exit");
+            System.out.print("Select an option: ");
             String option = scanner.nextLine().trim();
             switch (option) {
                 case "1":
@@ -72,10 +72,10 @@ public class ConsoleMenu {
                     break;
                 case "0":
                     running = false;
-                    System.out.println("Gracias por usar GameZone Unicesar.");
+                    System.out.println("Thank you for using GameZone Unicesar.");
                     break;
                 default:
-                    System.out.println("Opcion invalida.");
+                    System.out.println("Invalid option.");
             }
         }
     }
@@ -88,15 +88,17 @@ public class ConsoleMenu {
         boolean back = false;
         while (!back) {
             System.out.println();
-            System.out.println("----- Gestion de productos -----");
-            System.out.println("1. Registrar videojuego");
-            System.out.println("2. Registrar consola");
-            System.out.println("3. Listar todos los productos");
-            System.out.println("4. Buscar producto por ID");
-            System.out.println("5. Actualizar producto");
-            System.out.println("6. Eliminar producto");
-            System.out.println("0. Volver");
-            System.out.print("Seleccione una opcion: ");
+            System.out.println("----- Product management -----");
+            System.out.println("1. Register video game");
+            System.out.println("2. Register console");
+            System.out.println("3. List all products");
+            System.out.println("4. Find product by ID");
+            System.out.println("5. Update product");
+            System.out.println("6. Delete product");
+            System.out.println("7. List video games only");
+            System.out.println("8. List consoles only");
+            System.out.println("0. Back");
+            System.out.print("Select an option: ");
             String option = scanner.nextLine().trim();
             switch (option) {
                 case "1":
@@ -117,11 +119,17 @@ public class ConsoleMenu {
                 case "6":
                     deleteProduct();
                     break;
+                case "7":
+                    listVideoGamesOnly();
+                    break;
+                case "8":
+                    listConsolesOnly();
+                    break;
                 case "0":
                     back = true;
                     break;
                 default:
-                    System.out.println("Opcion invalida.");
+                    System.out.println("Invalid option.");
             }
         }
     }
@@ -129,49 +137,49 @@ public class ConsoleMenu {
     private void registerVideoGame() {
         String id = readRequiredText("ID: ");
         if (productService.findById(id).isPresent()) {
-            System.out.println("Ya existe un producto con el ID " + id + ".");
+            System.out.println("A product with ID " + id + " already exists.");
             return;
         }
-        String title = readRequiredText("Titulo: ");
-        double price = readPositiveDouble("Precio: ");
+        String title = readRequiredText("Title: ");
+        double price = readPositiveDouble("Price: ");
         int stock = readNonNegativeInt("Stock: ");
-        String platform = readRequiredText("Plataforma: ");
-        String genre = readRequiredText("Genero: ");
-        String ageRating = readRequiredText("Clasificacion por edad: ");
+        String platform = readRequiredText("Platform: ");
+        String genre = readRequiredText("Genre: ");
+        String ageRating = readRequiredText("Age rating: ");
         try {
             VideoGame videoGame = productService.registerVideoGame(id, title, price, stock,
                     platform, genre, ageRating);
-            System.out.println("Videojuego registrado exitosamente: " + videoGame.getFullDescription());
+            System.out.println("Video game registered successfully: " + videoGame.getFullDescription());
         } catch (RuntimeException e) {
-            System.out.println("Error al registrar el videojuego: " + e.getMessage());
+            System.out.println("Error registering the video game: " + e.getMessage());
         }
     }
 
     private void registerConsole() {
         String id = readRequiredText("ID: ");
         if (productService.findById(id).isPresent()) {
-            System.out.println("Ya existe un producto con el ID " + id + ".");
+            System.out.println("A product with ID " + id + " already exists.");
             return;
         }
-        String title = readRequiredText("Titulo: ");
-        double price = readPositiveDouble("Precio: ");
+        String title = readRequiredText("Title: ");
+        double price = readPositiveDouble("Price: ");
         int stock = readNonNegativeInt("Stock: ");
-        String brand = readRequiredText("Marca: ");
-        String model = readRequiredText("Modelo: ");
-        int generation = readPositiveInt("Generacion: ");
+        String brand = readRequiredText("Brand: ");
+        String model = readRequiredText("Model: ");
+        int generation = readPositiveInt("Generation: ");
         try {
             Console console = productService.registerConsole(id, title, price, stock,
                     brand, model, generation);
-            System.out.println("Consola registrada exitosamente: " + console.getFullDescription());
+            System.out.println("Console registered successfully: " + console.getFullDescription());
         } catch (RuntimeException e) {
-            System.out.println("Error al registrar la consola: " + e.getMessage());
+            System.out.println("Error registering the console: " + e.getMessage());
         }
     }
 
     private void listAllProducts() {
         List<Product> products = productService.listAllProducts();
         if (products.isEmpty()) {
-            System.out.println("No hay productos registrados.");
+            System.out.println("No products registered.");
             return;
         }
         int index = 1;
@@ -181,35 +189,81 @@ public class ConsoleMenu {
         }
     }
 
+    /**
+     * Lists only the products that are video games, numbered from 1 to n.
+     * Filtering is done in memory over {@link ProductService#listAllProducts()}
+     * since the service does not expose a type-specific query.
+     */
+    private void listVideoGamesOnly() {
+        List<Product> videoGames = new ArrayList<>();
+        for (Product product : productService.listAllProducts()) {
+            if (product instanceof VideoGame) {
+                videoGames.add(product);
+            }
+        }
+        if (videoGames.isEmpty()) {
+            System.out.println("No video games registered.");
+            return;
+        }
+        int index = 1;
+        for (Product videoGame : videoGames) {
+            System.out.println(index + ". " + videoGame.getFullDescription());
+            index++;
+        }
+    }
+
+    /**
+     * Lists only the products that are consoles, numbered from 1 to n.
+     * Filtering is done in memory over {@link ProductService#listAllProducts()}
+     * since the service does not expose a type-specific query.
+     */
+    private void listConsolesOnly() {
+        List<Product> consoles = new ArrayList<>();
+        for (Product product : productService.listAllProducts()) {
+            if (product instanceof Console) {
+                consoles.add(product);
+            }
+        }
+        if (consoles.isEmpty()) {
+            System.out.println("No consoles registered.");
+            return;
+        }
+        int index = 1;
+        for (Product console : consoles) {
+            System.out.println(index + ". " + console.getFullDescription());
+            index++;
+        }
+    }
+
     private void findProductById() {
-        String id = readRequiredText("ID del producto: ");
+        String id = readRequiredText("Product ID: ");
         Optional<Product> product = productService.findById(id);
         if (product.isEmpty()) {
-            System.out.println("No se encontro ningun producto con ese ID.");
+            System.out.println("No product was found with that ID.");
             return;
         }
         System.out.println(product.get().getFullDescription());
     }
 
     private void updateProduct() {
-        String id = readRequiredText("ID del producto a actualizar: ");
+        String id = readRequiredText("ID of the product to update: ");
         if (productService.findById(id).isEmpty()) {
-            System.out.println("No se encontro ningun producto con ese ID.");
+            System.out.println("No product was found with that ID.");
             return;
         }
-        String title = readRequiredText("Nuevo titulo: ");
-        double price = readPositiveDouble("Nuevo precio: ");
-        int stock = readNonNegativeInt("Nuevo stock: ");
+        String title = readRequiredText("New title: ");
+        double price = readPositiveDouble("New price: ");
+        int stock = readNonNegativeInt("New stock: ");
         boolean updated = productService.updateProduct(id, title, price, stock);
-        System.out.println(updated ? "Producto actualizado exitosamente."
-                : "No se encontro ningun producto con ese ID.");
+        System.out.println(updated ? "Product updated successfully."
+                : "No product was found with that ID.");
     }
 
     private void deleteProduct() {
-        String id = readRequiredText("ID del producto a eliminar: ");
+        String id = readRequiredText("ID of the product to delete: ");
         boolean deleted = productService.deleteProduct(id);
-        System.out.println(deleted ? "Producto eliminado exitosamente."
-                : "No se encontro ningun producto con ese ID.");
+        System.out.println(deleted ? "Product deleted successfully."
+                : "No product was found with that ID.");
     }
 
     // ---------------------------------------------------------------
@@ -220,15 +274,15 @@ public class ConsoleMenu {
         boolean back = false;
         while (!back) {
             System.out.println();
-            System.out.println("----- Gestion de personas -----");
-            System.out.println("1. Registrar cliente");
-            System.out.println("2. Registrar vendedor");
-            System.out.println("3. Listar clientes");
-            System.out.println("4. Listar vendedores");
-            System.out.println("5. Buscar cliente por ID");
-            System.out.println("6. Buscar vendedor por ID");
-            System.out.println("0. Volver");
-            System.out.print("Seleccione una opcion: ");
+            System.out.println("----- Person management -----");
+            System.out.println("1. Register customer");
+            System.out.println("2. Register seller");
+            System.out.println("3. List customers");
+            System.out.println("4. List sellers");
+            System.out.println("5. Find customer by ID");
+            System.out.println("6. Find seller by ID");
+            System.out.println("0. Back");
+            System.out.print("Select an option: ");
             String option = scanner.nextLine().trim();
             switch (option) {
                 case "1":
@@ -253,7 +307,7 @@ public class ConsoleMenu {
                     back = true;
                     break;
                 default:
-                    System.out.println("Opcion invalida.");
+                    System.out.println("Invalid option.");
             }
         }
     }
@@ -261,34 +315,34 @@ public class ConsoleMenu {
     private void registerCustomer() {
         String id = readRequiredText("ID: ");
         if (personService.findCustomer(id) != null) {
-            System.out.println("Ya existe un cliente con el ID " + id + ".");
+            System.out.println("A customer with ID " + id + " already exists.");
             return;
         }
-        String name = readRequiredText("Nombre completo: ");
-        String phone = readRequiredText("Telefono: ");
-        String mail = readRequiredEmail("Correo electronico: ");
+        String name = readRequiredText("Full name: ");
+        String phone = readRequiredText("Phone: ");
+        String mail = readRequiredEmail("Email: ");
         personService.registerCustomer(name, phone, id, mail);
-        System.out.println("Cliente registrado exitosamente.");
+        System.out.println("Customer registered successfully.");
     }
 
     private void registerSeller() {
         String id = readRequiredText("ID: ");
         if (personService.findSeller(id) != null) {
-            System.out.println("Ya existe un vendedor con el ID " + id + ".");
+            System.out.println("A seller with ID " + id + " already exists.");
             return;
         }
-        String name = readRequiredText("Nombre completo: ");
-        String phone = readRequiredText("Telefono: ");
-        String employeeCode = readRequiredText("Codigo de empleado: ");
-        String workShift = readRequiredText("Turno de trabajo: ");
+        String name = readRequiredText("Full name: ");
+        String phone = readRequiredText("Phone: ");
+        String employeeCode = readRequiredText("Employee code: ");
+        String workShift = readRequiredText("Work shift: ");
         personService.registerSeller(name, phone, id, employeeCode, workShift);
-        System.out.println("Vendedor registrado exitosamente.");
+        System.out.println("Seller registered successfully.");
     }
 
     private void listAllCustomers() {
         List<Customer> customers = personService.listCustomer();
         if (customers.isEmpty()) {
-            System.out.println("No hay clientes registrados.");
+            System.out.println("No customers registered.");
             return;
         }
         int index = 1;
@@ -302,7 +356,7 @@ public class ConsoleMenu {
     private void listAllSellers() {
         List<Seller> sellers = personService.listSeller();
         if (sellers.isEmpty()) {
-            System.out.println("No hay vendedores registrados.");
+            System.out.println("No sellers registered.");
             return;
         }
         int index = 1;
@@ -314,10 +368,10 @@ public class ConsoleMenu {
     }
 
     private void findCustomerById() {
-        String id = readRequiredText("ID del cliente: ");
+        String id = readRequiredText("Customer ID: ");
         Customer customer = personService.findCustomer(id);
         if (customer == null) {
-            System.out.println("No se encontro ningun cliente con ese ID.");
+            System.out.println("No customer was found with that ID.");
             return;
         }
         System.out.println(customer.getId() + " - " + customer.getName() + " - "
@@ -325,10 +379,10 @@ public class ConsoleMenu {
     }
 
     private void findSellerById() {
-        String id = readRequiredText("ID del vendedor: ");
+        String id = readRequiredText("Seller ID: ");
         Seller seller = personService.findSeller(id);
         if (seller == null) {
-            System.out.println("No se encontro ningun vendedor con ese ID.");
+            System.out.println("No seller was found with that ID.");
             return;
         }
         System.out.println(seller.getId() + " - " + seller.getName() + " - " + seller.getPhone()
@@ -343,20 +397,20 @@ public class ConsoleMenu {
         boolean back = false;
         while (!back) {
             System.out.println();
-            System.out.println("----- Gestion de ventas -----");
-            System.out.println("1. Registrar venta");
-            System.out.println("2. Ver historial completo de ventas");
-            System.out.println("3. Ver ventas por cliente");
-            System.out.println("4. Ver ventas por vendedor");
-            System.out.println("0. Volver");
-            System.out.print("Seleccione una opcion: ");
+            System.out.println("----- Sale management -----");
+            System.out.println("1. Register sale");
+            System.out.println("2. View full sales history");
+            System.out.println("3. View sales by customer");
+            System.out.println("4. View sales by seller");
+            System.out.println("0. Back");
+            System.out.print("Select an option: ");
             String option = scanner.nextLine().trim();
             switch (option) {
                 case "1":
                     registerSale();
                     break;
                 case "2":
-                    printSales(saleService.listAllSales(), "No hay ventas registradas.");
+                    printSales(saleService.listAllSales(), "No sales registered.");
                     break;
                 case "3":
                     viewSalesByCustomer();
@@ -368,51 +422,51 @@ public class ConsoleMenu {
                     back = true;
                     break;
                 default:
-                    System.out.println("Opcion invalida.");
+                    System.out.println("Invalid option.");
             }
         }
     }
 
     private void registerSale() {
-        String customerId = readRequiredText("ID del cliente: ");
+        String customerId = readRequiredText("Customer ID: ");
         if (personService.findCustomer(customerId) == null) {
-            System.out.println("No se encontro ningun cliente con ese ID. Se cancela el registro de la venta.");
+            System.out.println("No customer was found with that ID. The sale is cancelled.");
             return;
         }
-        String sellerId = readRequiredText("ID del vendedor: ");
+        String sellerId = readRequiredText("Seller ID: ");
         if (personService.findSeller(sellerId) == null) {
-            System.out.println("No se encontro ningun vendedor con ese ID. Se cancela el registro de la venta.");
+            System.out.println("No seller was found with that ID. The sale is cancelled.");
             return;
         }
-        int count = readPositiveInt("Cantidad de productos distintos a vender: ");
+        int count = readPositiveInt("Number of distinct products to sell: ");
 
         List<SaleItem> items = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
-            String productId = readRequiredText("ID del producto " + i + ": ");
+            String productId = readRequiredText("ID of product " + i + ": ");
             Optional<Product> product = productService.findById(productId);
             if (product.isEmpty()) {
-                System.out.println("No se encontro ningun producto con ID " + productId
-                        + ". Se cancela el registro de la venta.");
+                System.out.println("No product was found with ID " + productId
+                        + ". The sale is cancelled.");
                 return;
             }
-            int quantity = readPositiveInt("Cantidad del producto " + i + ": ");
+            int quantity = readPositiveInt("Quantity of product " + i + ": ");
             items.add(new SaleItem(product.get(), quantity));
         }
 
         boolean registered = saleService.registerSale(customerId, sellerId, items);
         if (!registered) {
-            System.out.println("No fue posible registrar la venta. Verifique los datos ingresados.");
+            System.out.println("The sale could not be registered. Please check the entered data.");
         }
     }
 
     private void viewSalesByCustomer() {
-        String customerId = readRequiredText("ID del cliente: ");
-        printSales(saleService.listSalesByCustomer(customerId), "Este cliente no tiene ventas registradas.");
+        String customerId = readRequiredText("Customer ID: ");
+        printSales(saleService.listSalesByCustomer(customerId), "This customer has no sales registered.");
     }
 
     private void viewSalesBySeller() {
-        String sellerId = readRequiredText("ID del vendedor: ");
-        printSales(saleService.listSalesBySeller(sellerId), "Este vendedor no tiene ventas registradas.");
+        String sellerId = readRequiredText("Seller ID: ");
+        printSales(saleService.listSalesBySeller(sellerId), "This seller has no sales registered.");
     }
 
     /**
@@ -443,9 +497,9 @@ public class ConsoleMenu {
      */
     private String formatSaleReceipt(Sale sale) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Venta [").append(sale.getDate()).append("] ")
-                .append("Cliente: ").append(sale.getCustomer().getName())
-                .append(" | Vendedor: ").append(sale.getSeller().getName())
+        sb.append("Sale [").append(sale.getDate()).append("] ")
+                .append("Customer: ").append(sale.getCustomer().getName())
+                .append(" | Seller: ").append(sale.getSeller().getName())
                 .append("\n");
         for (SaleItem item : sale.getItems()) {
             sb.append("     - ").append(item.getProduct().getTitle())
@@ -474,7 +528,7 @@ public class ConsoleMenu {
             if (!value.isEmpty()) {
                 return value;
             }
-            System.out.println("Este dato no puede quedar en blanco. Intente de nuevo.");
+            System.out.println("This field cannot be blank. Please try again.");
         }
     }
 
@@ -493,7 +547,7 @@ public class ConsoleMenu {
             if (value.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
                 return value;
             }
-            System.out.println("El correo electronico no tiene un formato valido (ejemplo: nombre@dominio.com).");
+            System.out.println("The email does not have a valid format (example: name@domain.com).");
         }
     }
 
@@ -514,9 +568,9 @@ public class ConsoleMenu {
                 if (value > 0) {
                     return value;
                 }
-                System.out.println("El precio debe ser mayor que cero. Intente de nuevo.");
+                System.out.println("The price must be greater than zero. Please try again.");
             } catch (NumberFormatException e) {
-                System.out.println("Debe ingresar un numero valido. Intente de nuevo.");
+                System.out.println("Please enter a valid number. Try again.");
             }
         }
     }
@@ -538,9 +592,9 @@ public class ConsoleMenu {
                 if (value >= 0) {
                     return value;
                 }
-                System.out.println("El valor no puede ser negativo. Intente de nuevo.");
+                System.out.println("The value cannot be negative. Please try again.");
             } catch (NumberFormatException e) {
-                System.out.println("Debe ingresar un numero entero valido. Intente de nuevo.");
+                System.out.println("Please enter a valid whole number. Try again.");
             }
         }
     }
@@ -562,9 +616,9 @@ public class ConsoleMenu {
                 if (value > 0) {
                     return value;
                 }
-                System.out.println("El valor debe ser mayor que cero. Intente de nuevo.");
+                System.out.println("The value must be greater than zero. Please try again.");
             } catch (NumberFormatException e) {
-                System.out.println("Debe ingresar un numero entero valido. Intente de nuevo.");
+                System.out.println("Please enter a valid whole number. Try again.");
             }
         }
     }
