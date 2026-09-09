@@ -20,11 +20,31 @@ public class ProductService {
     private final ProductRepository productRepository;
     private List<Product> products;
 
+    /**
+     * Creates a product service backed by the given repository, loading any
+     * previously persisted products immediately.
+     *
+     * @param productRepository the repository used for persistence
+     */
     public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
         this.products = productRepository.loadAll();
     }
 
+    /**
+     * Registers a new video game in the inventory and persists the change.
+     *
+     * @param productId unique identifier of the product
+     * @param title title of the video game
+     * @param price unit price
+     * @param stockQuantity initial quantity available
+     * @param platform platform the game was developed for
+     * @param genre genre of the game
+     * @param ageRating recommended age rating
+     * @return the newly created video game
+     * @throws IllegalArgumentException if a product with the same id already
+     * exists
+     */
     public VideoGame registerVideoGame(String productId, String title, double price,
             int stockQuantity, String platform, String genre,
             String ageRating) {
@@ -36,6 +56,20 @@ public class ProductService {
         return videoGame;
     }
 
+    /**
+     * Registers a new console in the inventory and persists the change.
+     *
+     * @param productId unique identifier of the product
+     * @param title title/name of the console
+     * @param price unit price
+     * @param stockQuantity initial quantity available
+     * @param brand brand of the console
+     * @param model model of the console
+     * @param generation generation number of the console
+     * @return the newly created console
+     * @throws IllegalArgumentException if a product with the same id already
+     * exists
+     */
     public Console registerConsole(String productId, String title, double price,
             int stockQuantity, String brand, String model,
             int generation) {
@@ -47,22 +81,51 @@ public class ProductService {
         return console;
     }
 
+    /**
+     * Returns the full list of products currently available in inventory.
+     *
+     * @return a copy of the list of products
+     */
     public List<Product> listAllProducts() {
         return new ArrayList<>(products);
     }
 
+    /**
+     * Finds a product by its unique identifier.
+     *
+     * @param productId the identifier to search for
+     * @return an Optional containing the product if found, or empty otherwise
+     */
     public Optional<Product> findById(String productId) {
         return products.stream()
                 .filter(p -> p.getProductId().equals(productId))
                 .findFirst();
     }
 
+    /**
+     * Checks whether a given product has enough stock for the requested
+     * quantity. Used by other modules (such as sales) before confirming an
+     * operation that consumes inventory.
+     *
+     * @param productId the id of the product to check
+     * @param quantity the quantity requested
+     * @return true if enough stock is available, false otherwise
+     */
     public boolean hasEnoughStock(String productId, int quantity) {
         return findById(productId)
                 .map(p -> p.hasEnoughStock(quantity))
                 .orElse(false);
     }
 
+    /**
+     * Decreases the stock of a given product by the specified quantity and
+     * persists the change. Intended to be called when a sale is registered.
+     *
+     * @param productId the id of the product whose stock will be updated
+     * @param quantity the quantity to subtract from stock
+     * @throws IllegalArgumentException if the product does not exist or there
+     * is not enough stock available
+     */
     public void updateStock(String productId, int quantity) {
         Product product = findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -108,6 +171,13 @@ public class ProductService {
         return removed;
     }
 
+    /**
+     * Ensures the given product id is not already in use.
+     *
+     * @param productId the id to validate
+     * @throws IllegalArgumentException if a product with the same id already
+     * exists
+     */
     private void validateNewProductId(String productId) {
         if (findById(productId).isPresent()) {
             throw new IllegalArgumentException(
@@ -115,6 +185,9 @@ public class ProductService {
         }
     }
 
+    /**
+     * Persists the current in-memory list of products through the repository.
+     */
     private void persist() {
         productRepository.saveAll(products);
     }
