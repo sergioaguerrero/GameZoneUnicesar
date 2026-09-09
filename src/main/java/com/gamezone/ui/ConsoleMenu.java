@@ -1,4 +1,4 @@
 package com.gamezone.ui;
 
-public class GraphicMenu {
+public class ConsoleMenu {
 }
