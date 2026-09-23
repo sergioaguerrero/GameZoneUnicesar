@@ -1,5 +1,8 @@
-# Bitácora de Consultas Técnicas — Java / Manejo de Archivos
-
+# Bitácora de Consultas Técnicas — Java
+- **Student:** Jhonatan David Galindo Gómez
+- **Student ID:** 1066283456
+- **Role:** Developer 2 — Person Module  
+- **Tool used:** Claude (Anthropic)
 ---
 
 ## 1. Manejo de archivos en Java (lectura/escritura general)
