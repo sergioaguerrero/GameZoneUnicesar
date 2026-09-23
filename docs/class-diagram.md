@@ -78,6 +78,42 @@ classDiagram
         +String getFullDescription()
     }
 
+    class Accessory {
+        <<abstract>>
+        -List~String~ compatibleConsoles
+        +List~String~ getCompatibleConsoles()
+        +void setCompatibleConsoles(List~String~ compatibleConsoles)
+        +void addCompatibleConsole(String consoleId)
+        +String getFullDescription()*
+    }
+
+    class Controller {
+        -String connectionType
+        +String getConnectionType()
+        +void setConnectionType(String connectionType)
+        +String getFullDescription()
+    }
+
+    class Cable {
+        -double length
+        -String connectorType
+        +double getLength()
+        +void setLength(double length)
+        +String getConnectorType()
+        +void setConnectorType(String connectorType)
+        +String getFullDescription()
+    }
+
+    class Memory {
+        -int capacity
+        -String memoryType
+        +int getCapacity()
+        +void setCapacity(int capacity)
+        +String getMemoryType()
+        +void setMemoryType(String memoryType)
+        +String getFullDescription()
+    }
+
     class Sale {
         -LocalDate date
         -Customer customer
@@ -110,6 +146,11 @@ classDiagram
 
     Product <|-- VideoGame
     Product <|-- Console
+    Product <|-- Accessory
+    
+    Accessory <|-- Controller
+    Accessory <|-- Cable
+    Accessory <|-- Memory
 
     Customer "1" --> "0..*" Sale : makes
     Seller "1" --> "0..*" Sale : attends
