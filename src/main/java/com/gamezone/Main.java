@@ -28,12 +28,13 @@ public class Main {
             ProductRepository productRepository = new ProductRepository();
             PersonRepository personRepository = new PersonRepository();
             SaleRepository saleRepository = new SaleRepository();
-            AccessoryRepository accessoryRepository = new AccessoryRepository(productRepository);
+            AccessoryRepository accessoryRepository = new AccessoryRepository();
 
             ProductService productService = new ProductService(productRepository);
             PersonService personService = new PersonService(personRepository,
                     Collections.emptyList(), Collections.emptyList());
-            AccessoryService accessoryService = new AccessoryService(accessoryRepository);
+            AccessoryService accessoryService = new AccessoryService(accessoryRepository,
+                    accessoryRepository.loadAll());
             SaleService saleService = new SaleService(saleRepository, personService,
                     productService, accessoryService);
 
