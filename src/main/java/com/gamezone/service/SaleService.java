@@ -61,9 +61,13 @@ public class SaleService {
 
         for (SaleItem item : items) {
             String productId = item.getProduct().getProductId();
-            boolean enoughStock = item.getProduct() instanceof Accessory
-                    ? accessoryService.hasEnoughStock(productId, item.getQuantity())
-                    : productService.hasEnoughStock(productId, item.getQuantity());
+            boolean enoughStock;
+            if (item.getProduct() instanceof Accessory) {
+                Accessory accessory = accessoryService.findById(productId).orElse(null);
+                enoughStock = accessory != null && accessory.hasEnoughStock(item.getQuantity());
+            } else {
+                enoughStock = productService.hasEnoughStock(productId, item.getQuantity());
+            }
             if (!enoughStock) {
                 System.err.println("Insufficient stock for product with ID: " + productId);
                 return false;
