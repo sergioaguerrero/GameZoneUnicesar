@@ -1,12 +1,17 @@
 package com.gamezone.ui;
 
+import com.gamezone.model.Accessory;
+import com.gamezone.model.Cable;
 import com.gamezone.model.Console;
+import com.gamezone.model.Controller;
 import com.gamezone.model.Customer;
+import com.gamezone.model.Memory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
 import com.gamezone.model.SaleItem;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
+import com.gamezone.service.AccessoryService;
 import com.gamezone.service.PersonService;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.SaleService;
@@ -30,19 +35,23 @@ public class ConsoleMenu {
     private final ProductService productService;
     private final PersonService personService;
     private final SaleService saleService;
+    private final AccessoryService accessoryService;
     private final Scanner scanner;
 
     /**
      * Creates a new console menu backed by the given services.
      *
-     * @param productService the service used for product operations
-     * @param personService  the service used for customer and seller operations
-     * @param saleService    the service used for sale operations
+     * @param productService   the service used for product operations
+     * @param personService    the service used for customer and seller operations
+     * @param saleService      the service used for sale operations
+     * @param accessoryService the service used for accessory operations
      */
-    public ConsoleMenu(ProductService productService, PersonService personService, SaleService saleService) {
+    public ConsoleMenu(ProductService productService, PersonService personService,
+                       SaleService saleService, AccessoryService accessoryService) {
         this.productService = productService;
         this.personService = personService;
         this.saleService = saleService;
+        this.accessoryService = accessoryService;
         this.scanner = new Scanner(System.in);
     }
 
@@ -57,6 +66,7 @@ public class ConsoleMenu {
             System.out.println("1. Product management");
             System.out.println("2. Person management");
             System.out.println("3. Sale management");
+            System.out.println("4. Accessory management");
             System.out.println("0. Exit");
             System.out.print("Select an option: ");
             String option = scanner.nextLine().trim();
@@ -69,6 +79,9 @@ public class ConsoleMenu {
                     break;
                 case "3":
                     showSaleMenu();
+                    break;
+                case "4":
+                    showAccessoryMenu();
                     break;
                 case "0":
                     running = false;
@@ -438,25 +451,44 @@ public class ConsoleMenu {
             System.out.println("No seller was found with that ID. The sale is cancelled.");
             return;
         }
-        int count = readPositiveInt("Number of distinct products to sell: ");
+        int count = readPositiveInt("Number of distinct items to sell: ");
 
         List<SaleItem> items = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
-            String productId = readRequiredText("ID of product " + i + ": ");
-            Optional<Product> product = productService.findById(productId);
-            if (product.isEmpty()) {
-                System.out.println("No product was found with ID " + productId
+            String itemId = readRequiredText("ID of product or accessory " + i + " (video game, console or accessory): ");
+            Product item = resolveSellableItem(itemId);
+            if (item == null) {
+                System.out.println("No product or accessory was found with ID " + itemId
                         + ". The sale is cancelled.");
                 return;
             }
-            int quantity = readPositiveInt("Quantity of product " + i + ": ");
-            items.add(new SaleItem(product.get(), quantity));
+            int quantity = readPositiveInt("Quantity of item " + i + ": ");
+            items.add(new SaleItem(item, quantity));
         }
 
         boolean registered = saleService.registerSale(customerId, sellerId, items);
         if (!registered) {
             System.out.println("The sale could not be registered. Please check the entered data.");
         }
+    }
+
+    /**
+     * Resolves an item id entered when registering a sale, looking it up
+     * first among traditional products (video games and consoles) and then,
+     * if not found there, among accessories. This is what allows a sale to
+     * combine any mix of products and accessories in a single transaction.
+     *
+     * @param itemId the id entered by the user
+     * @return the matching product or accessory, or {@code null} if no item
+     * with that id is registered anywhere
+     */
+    private Product resolveSellableItem(String itemId) {
+        Optional<Product> product = productService.findById(itemId);
+        if (product.isPresent()) {
+            return product.get();
+        }
+        Optional<Accessory> accessory = accessoryService.findById(itemId);
+        return accessory.orElse(null);
     }
 
     private void viewSalesByCustomer() {
@@ -509,6 +541,178 @@ public class ConsoleMenu {
         }
         sb.append("     Total: $").append(String.format("%.2f", sale.calculateTotal()));
         return sb.toString();
+    }
+
+    // ---------------------------------------------------------------
+    // Accessory management
+    // ---------------------------------------------------------------
+
+    private void showAccessoryMenu() {
+        boolean back = false;
+        while (!back) {
+            System.out.println();
+            System.out.println("----- Accessory management -----");
+            System.out.println("1. Register controller");
+            System.out.println("2. Register cable");
+            System.out.println("3. Register memory");
+            System.out.println("4. List all accessories");
+            System.out.println("5. List accessories by type");
+            System.out.println("6. List accessories compatible with a console");
+            System.out.println("0. Back");
+            System.out.print("Select an option: ");
+            String option = scanner.nextLine().trim();
+            switch (option) {
+                case "1":
+                    registerController();
+                    break;
+                case "2":
+                    registerCable();
+                    break;
+                case "3":
+                    registerMemory();
+                    break;
+                case "4":
+                    listAllAccessories();
+                    break;
+                case "5":
+                    listAccessoriesByType();
+                    break;
+                case "6":
+                    listAccessoriesCompatibleWithConsole();
+                    break;
+                case "0":
+                    back = true;
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
+        }
+    }
+
+    private void registerController() {
+        String id = readRequiredText("ID: ");
+        if (accessoryService.findById(id).isPresent()) {
+            System.out.println("An accessory with ID " + id + " already exists.");
+            return;
+        }
+        String title = readRequiredText("Title: ");
+        double price = readPositiveDouble("Price: ");
+        int stock = readNonNegativeInt("Stock: ");
+        String connectionType = readRequiredText("Connection type (wireless/wired): ");
+        try {
+            Controller controller = accessoryService.registerController(id, title, price, stock,
+                    connectionType);
+            System.out.println("Controller registered successfully: " + controller.getFullDescription());
+        } catch (RuntimeException e) {
+            System.out.println("Error registering the controller: " + e.getMessage());
+        }
+    }
+
+    private void registerCable() {
+        String id = readRequiredText("ID: ");
+        if (accessoryService.findById(id).isPresent()) {
+            System.out.println("An accessory with ID " + id + " already exists.");
+            return;
+        }
+        String title = readRequiredText("Title: ");
+        double price = readPositiveDouble("Price: ");
+        int stock = readNonNegativeInt("Stock: ");
+        double length = readPositiveDouble("Length (meters): ");
+        String connectorType = readRequiredText("Connector type (HDMI, USB, optical, etc.): ");
+        try {
+            Cable cable = accessoryService.registerCable(id, title, price, stock, length, connectorType);
+            System.out.println("Cable registered successfully: " + cable.getFullDescription());
+        } catch (RuntimeException e) {
+            System.out.println("Error registering the cable: " + e.getMessage());
+        }
+    }
+
+    private void registerMemory() {
+        String id = readRequiredText("ID: ");
+        if (accessoryService.findById(id).isPresent()) {
+            System.out.println("An accessory with ID " + id + " already exists.");
+            return;
+        }
+        String title = readRequiredText("Title: ");
+        double price = readPositiveDouble("Price: ");
+        int stock = readNonNegativeInt("Stock: ");
+        int capacityGB = readPositiveInt("Capacity (GB): ");
+        String memoryType = readRequiredText("Memory type (SD, microSD, internal storage): ");
+        try {
+            Memory memory = accessoryService.registerMemory(id, title, price, stock,
+                    capacityGB, memoryType);
+            System.out.println("Memory registered successfully: " + memory.getFullDescription());
+        } catch (RuntimeException e) {
+            System.out.println("Error registering the memory: " + e.getMessage());
+        }
+    }
+
+    private void listAllAccessories() {
+        List<Accessory> accessories = accessoryService.listAllAccessories();
+        if (accessories.isEmpty()) {
+            System.out.println("No accessories registered.");
+            return;
+        }
+        int index = 1;
+        for (Accessory accessory : accessories) {
+            System.out.println(index + ". " + accessory.getFullDescription());
+            index++;
+        }
+    }
+
+    /**
+     * Lets the user pick an accessory type from a fixed list instead of
+     * typing it freely, because {@code AccessoryService.listAccessoriesByType}
+     * compares the type with {@code equals} (case-sensitive, exact match).
+     * If your {@code getAccessoryType()} method returns different text than
+     * "Controller" / "Cable" / "Memory", update the three constants below to
+     * match it exactly.
+     */
+    private void listAccessoriesByType() {
+        System.out.println("1. Controller");
+        System.out.println("2. Cable");
+        System.out.println("3. Memory");
+        String option = readRequiredText("Select a type: ");
+        String type;
+        switch (option) {
+            case "1":
+                type = "Controller";
+                break;
+            case "2":
+                type = "Cable";
+                break;
+            case "3":
+                type = "Memory";
+                break;
+            default:
+                System.out.println("Invalid option.");
+                return;
+        }
+
+        List<Accessory> accessories = accessoryService.listAccessoriesByType(type);
+        if (accessories.isEmpty()) {
+            System.out.println("No accessories were found for that type.");
+            return;
+        }
+        int index = 1;
+        for (Accessory accessory : accessories) {
+            System.out.println(index + ". " + accessory.getFullDescription());
+            index++;
+        }
+    }
+
+    private void listAccessoriesCompatibleWithConsole() {
+        String consoleId = readRequiredText("Console ID: ");
+        List<Accessory> accessories = accessoryService.findAccessoriesCompatibleWith(consoleId);
+        if (accessories.isEmpty()) {
+            System.out.println("No accessories are registered as compatible with that console.");
+            return;
+        }
+        int index = 1;
+        for (Accessory accessory : accessories) {
+            System.out.println(index + ". " + accessory.getFullDescription());
+            index++;
+        }
     }
 
     // ---------------------------------------------------------------
