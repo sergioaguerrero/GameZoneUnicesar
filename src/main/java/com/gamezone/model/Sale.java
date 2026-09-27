@@ -12,6 +12,8 @@ public class Sale {
     private Customer customer;
     private Seller seller;
     private List<SaleItem> items;
+    private String appliedPromotionName;
+    private double discountAmount = 0.0;
 
     /**
      * Constructs a new Sale transaction.
@@ -59,6 +61,22 @@ public class Sale {
         this.items = items;
     }
 
+    public String getAppliedPromotionName() {
+        return appliedPromotionName;
+    }
+
+    public void setAppliedPromotionName(String appliedPromotionName) {
+        this.appliedPromotionName = appliedPromotionName;
+    }
+
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
     /**
      * Adds a new item to the sale's item list.
      *
@@ -91,4 +109,39 @@ public class Sale {
             throw new IllegalStateException("A sale must contain at least one product to be registered.");
         }
     }
+    
+    /**
+     * Generates a detailed receipt for the sale, including the sale date,
+     * customer, seller, purchased items, subtotal, applied discount, and
+     * final total.
+     *
+     * @return a formatted string containing the detailed sale receipt
+     */
+    public String generateReceipt() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Venta [").append(date).append("] ")
+                .append("Cliente: ").append(customer.getName())
+                .append(" | Vendedor: ").append(seller.getName())
+                .append("\n");
+        for (SaleItem item : items) {
+            sb.append("     - ").append(item.getProduct().getTitle())
+                    .append(" x").append(item.getQuantity())
+                    .append(" = $").append(String.format("%.2f", item.calculateSubtotal()))
+                    .append("\n");
+        }
+
+        double subtotal = calculateTotal();
+        sb.append("     Subtotal: $").append(String.format("%.2f", subtotal)).append("\n");
+
+        if (discountAmount > 0 && appliedPromotionName != null) {
+            sb.append("     Descuento (").append(appliedPromotionName).append("): -$")
+                    .append(String.format("%.2f", discountAmount)).append("\n");
+        }
+
+        double finalTotal = subtotal - discountAmount;
+        sb.append("     Total Final: $").append(String.format("%.2f", finalTotal));
+
+        return sb.toString();
+    }
+
 }

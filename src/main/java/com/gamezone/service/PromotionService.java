@@ -156,7 +156,7 @@ public class PromotionService {
     private void persist() {
         promotionRepository.saveAll(promotions);
     }
-    
+
     /**
      * Returns all promotions that are currently active based on the current date.
      *
