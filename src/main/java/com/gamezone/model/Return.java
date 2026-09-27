@@ -9,12 +9,12 @@ import java.util.List;
  * Represents a product return commercialized by GameZone Unicesar.
  *
  * A return references an existing {@link Sale} and includes one or more
- * products from that sale that the customer gives back. It is not
- * necessarily a full return of the original sale: the customer may keep
- * some of the purchased products.
+ * products from that sale that the customer gives back. It is not necessarily a
+ * full return of the original sale: the customer may keep some of the purchased
+ * products.
  *
- * The relationship with the original sale is a plain reference and is
- * immutable once the return is created, so there is no setter for it.
+ * The relationship with the original sale is a plain reference and is immutable
+ * once the return is created, so there is no setter for it.
  */
 public class Return {
 
@@ -28,17 +28,17 @@ public class Return {
     /**
      * Creates a new return.
      *
-     * @param returnId         unique identifier of the return
-     * @param returnDate       date on which the return is registered
-     * @param originalSale     sale the returned products belong to
+     * @param returnId unique identifier of the return
+     * @param returnDate date on which the return is registered
+     * @param originalSale sale the returned products belong to
      * @param returnedProducts products being returned, at least one
-     * @param reason           reason given for the return
-     * @throws IllegalArgumentException if the identifier or the reason are null or blank,
-     *                                  if the date or the original sale are null,
-     *                                  or if the list of returned products is null or empty
+     * @param reason reason given for the return
+     * @throws IllegalArgumentException if the identifier or the reason are null
+     * or blank, if the date or the original sale are null, or if the list of
+     * returned products is null or empty
      */
     public Return(String returnId, LocalDate returnDate, Sale originalSale,
-                  List<Product> returnedProducts, String reason) {
+            List<Product> returnedProducts, String reason) {
         if (returnId == null || returnId.isBlank()) {
             throw new IllegalArgumentException("Return id must not be null or blank");
         }
@@ -92,8 +92,8 @@ public class Return {
     /**
      * Returns the products being returned.
      *
-     * The returned list is read-only, since the set of returned products
-     * does not change after the return is created.
+     * The returned list is read-only, since the set of returned products does
+     * not change after the return is created.
      *
      * @return the returned products
      */
@@ -119,5 +119,20 @@ public class Return {
      */
     public double getRefundAmount() {
         return refundAmount;
+    }
+
+    /**
+     * Calculates the refund amount as the sum of the prices of the returned
+     * products, and stores it in this return.
+     *
+     * @return the calculated refund amount
+     */
+    public double calculateRefundAmount() {
+        double total = 0.0;
+        for (Product product : returnedProducts) {
+            total += product.getPrice();
+        }
+        this.refundAmount = total;
+        return this.refundAmount;
     }
 }
