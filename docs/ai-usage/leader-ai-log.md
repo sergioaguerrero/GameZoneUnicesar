@@ -79,3 +79,31 @@
 * **Problem Posed:** `ConsoleMenu.java` had been written and iterated on in English throughout this consultation. The actual assignment requirement states that every message visible to the user in the console menu must be in Spanish (identifiers, comments, and Javadoc stay in English), which had been missed — the opposite of the language direction assumed earlier in this same log (see the English-language entry that used to occupy this position).
 * **Suggested Technical Solution:** Rewrote every `System.out`/`System.err` string the user sees — menu headers, prompts, validation retry messages, success and error messages, and the formatted sale receipt — into Spanish, without changing any method signature, validation rule, or numbering logic. One deliberate exception: the accessory-type filter menu displays Spanish labels ("Control" / "Cable" / "Memoria") to the user but still passes the English values `"Controller"` / `"Cable"` / `"Memory"` to `AccessoryService.listAccessoriesByType`, because that service compares types with an exact, case-sensitive `equals()` against whatever `getAccessoryType()` returns in the model — translating the value passed to the service, rather than just its on-screen label, would have silently broken the filter. Recompiled against the teammate's real `AccessoryService`/`AccessoryRepository` to confirm no regression.
 * **Key Lesson / Application:** A UI-text-language requirement applies to what the user reads on screen, not to the data values passed internally between layers — conflating the two when translating can silently break behavior that depends on exact string matching in another layer. It's also a reminder to re-verify stated requirements against delivered code rather than assuming an earlier decision (in this case, English) still holds.
+
+# AI-USAGE: Technical Consultation Log - GEMINI
+
+**Project:** GameZone Unicesar (Java / Maven console application)
+**AI tool used:** Gemini (Google)
+**Scope of this log:** Technical Lead scope for Requirement 2 (Promotions). This covers the architectural update of the system diagrams (`Promotion` hierarchy), identifying gaps in the existing Service layer (`PromotionService`), evolving the persistence strategy (`SaleRepository`) for data retention, and planning the additive integration of business logic into `SaleService.registerSale` without breaking previous requirements.
+
+---
+
+## 1. Domain Modeling and Architecture Diagram Updates
+* **Problem Posed:** Needed to incorporate the new `Promotion` entity and its three specific variations (Percentage, Category, Volume) into the existing system architecture, as well as prepare the `Sale` class to handle discounts, all before writing code.
+* **Suggested Technical Solution:** Created a separate, independent inheritance tree for `Promotion` in `hierarchy-diagram.md` (ensuring it did not incorrectly inherit from `Product`). Updated `class-diagram.md` and `layers-diagram.md` to include `PromotionService` and `PromotionRepository`. Added the planned fields `appliedPromotionName`, `discountAmount`, and methods `calculateFinalTotal()`, `generateReceipt()` to the `Sale` class documentation.
+* **Key Lesson / Application:** Proper domain segregation. A promotion is applied *to* a sale, but it is a distinct business concept. Updating structural documentation before coding ensures clear architectural boundaries and prevents coupling issues during implementation.
+
+## 2. Identifying and Closing Missing Service API Contracts
+* **Problem Posed:** Before integrating promotions into the sale process, an analysis of the existing `PromotionService` revealed that critical methods required by the PDF were missing: `listActivePromotions()` and `findBestPromotionFor(Sale)`. The `SaleService` had no way to delegate the discount calculation.
+* **Suggested Technical Solution:** Halted the integration phase in `SaleService` and `ConsoleMenu` to first implement these missing methods in `PromotionService`. Recognized that building the UI or consumer service against non-existent methods would break the build.
+* **Key Lesson / Application:** Top-down API analysis prevents integration blockers. Verifying that a Service layer fulfills its public contract before wiring the UI/consumer layers ensures the required behavior actually exists in the provider module.
+
+## 3. Evolving Flat-File Persistence and Backward Compatibility
+* **Problem Posed:** The `Sale` object needed to store `appliedPromotionName` and `discountAmount`. Because the system relies on CSV file persistence (`SaleRepository`), if these fields weren't explicitly saved and loaded, the discount data would be lost immediately after the program closed, rendering the receipt history useless.
+* **Suggested Technical Solution:** Identified the need to modify `SaleRepository.loadSales` and the saving mechanism to append the new fields to the CSV schema. Addressed the critical need for backward compatibility so that previously saved sales (without promotions) wouldn't throw `ArrayIndexOutOfBoundsException` when the system attempted to read them.
+* **Key Lesson / Application:** When evolving data models in flat-file or schema-less persistence, always account for legacy data parsing. Appending optional fields and checking array lengths safely prevents data corruption and system crashes on startup.
+
+## 4. Orchestrating Business Logic (Additive Service Integration)
+* **Problem Posed:** The new promotion evaluation logic needed to be triggered during a sale, applying the best possible discount to the total without cluttering the UI layer or violating the separation of concerns established in Requirement 1.
+* **Suggested Technical Solution:** Planned an additive modification strictly inside `SaleService.registerSale()`. The service orchestrates the process: it calculates the base subtotal, invokes `promotionService.findBestPromotionFor(sale)`, applies the returned discount to the `Sale` object, and finally persists the updated state.
+* **Key Lesson / Application:** Business orchestration strictly belongs in the Service layer. The UI layer should remain completely oblivious to how discounts are calculated or compared; it should simply request the sale registration and print the resulting receipt.
