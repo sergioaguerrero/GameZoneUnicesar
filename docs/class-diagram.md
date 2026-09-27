@@ -80,10 +80,13 @@ classDiagram
 
     class Accessory {
         <<abstract>>
-        -List~String~ compatibleConsoles
-        +List~String~ getCompatibleConsoles()
-        +void setCompatibleConsoles(List~String~ compatibleConsoles)
-        +void addCompatibleConsole(String consoleId)
+        -List~Console~ compatibleConsoles
+        +List~Console~ getCompatibleConsoles()
+        +void setCompatibleConsoles(List~Console~ compatibleConsoles)
+        +void addCompatibleConsole(Console console)
+        +boolean removeCompatibleConsole(Console console)
+        +boolean isCompatibleWith(Console console)
+        +String getAccessoryType()*
         +String getFullDescription()*
     }
 
@@ -91,6 +94,7 @@ classDiagram
         -String connectionType
         +String getConnectionType()
         +void setConnectionType(String connectionType)
+        +String getAccessoryType()
         +String getFullDescription()
     }
 
@@ -101,17 +105,58 @@ classDiagram
         +void setLength(double length)
         +String getConnectorType()
         +void setConnectorType(String connectorType)
+        +String getAccessoryType()
         +String getFullDescription()
     }
 
     class Memory {
-        -int capacity
+        -int capacityGB
         -String memoryType
-        +int getCapacity()
-        +void setCapacity(int capacity)
+        +int getCapacityGB()
+        +void setCapacityGB(int capacityGB)
         +String getMemoryType()
         +void setMemoryType(String memoryType)
+        +String getAccessoryType()
         +String getFullDescription()
+    }
+
+    class Promotion {
+        <<abstract>>
+        -String id
+        -String name
+        -LocalDate startDate
+        -LocalDate endDate
+        +String getId()
+        +String getName()
+        +LocalDate getStartDate()
+        +LocalDate getEndDate()
+        +boolean isActive(LocalDate date)
+        +double calculateDiscount(Sale sale)*
+    }
+
+    class PercentageDiscount {
+        -double percentage
+        +double getPercentage()
+        +void setPercentage(double percentage)
+        +double calculateDiscount(Sale sale)
+    }
+
+    class CategoryDiscount {
+        +String CATEGORY_VIDEOGAME$
+        +String CATEGORY_CONSOLE$
+        -double percentage
+        -String targetCategory
+        +double getPercentage()
+        +String getTargetCategory()
+        +double calculateDiscount(Sale sale)
+    }
+
+    class BulkPurchaseDiscount {
+        -int minimumQuantity
+        -double percentage
+        +int getMinimumQuantity()
+        +double getPercentage()
+        +double calculateDiscount(Sale sale)
     }
 
     class Sale {
@@ -119,6 +164,8 @@ classDiagram
         -Customer customer
         -Seller seller
         -List~SaleItem~ items
+        -String appliedPromotionName
+        -double discountAmount
         +LocalDate getDate()
         +void setDate(LocalDate date)
         +Customer getCustomer()
@@ -128,6 +175,8 @@ classDiagram
         +List~SaleItem~ getItems()
         +void addItem(SaleItem item)
         +double calculateTotal()
+        +double calculateFinalTotal()
+        +String generateReceipt()
         +void register()
     }
 
@@ -152,8 +201,17 @@ classDiagram
     Accessory <|-- Cable
     Accessory <|-- Memory
 
+    Promotion <|-- PercentageDiscount
+    Promotion <|-- CategoryDiscount
+    Promotion <|-- BulkPurchaseDiscount
+
     Customer "1" --> "0..*" Sale : makes
     Seller "1" --> "0..*" Sale : attends
 
-    Sale "1" *-- "1.." SaleItem : contains
+    Sale "1" *-- "1..*" SaleItem : contains
     SaleItem "0..*" --> "1" Product : includes
+
+    Accessory "0..*" --> "0..*" Console : compatible with
+    CategoryDiscount ..> VideoGame : checks category via instanceof
+    CategoryDiscount ..> Console : checks category via instanceof
+    Sale "1" --> "0..1" Promotion : applied promotion (by name, not object reference)

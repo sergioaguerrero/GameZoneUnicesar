@@ -157,4 +157,41 @@ public class PromotionService {
         promotionRepository.saveAll(promotions);
     }
 
+    /**
+     * Returns all promotions that are currently active based on the current date.
+     *
+     * @return a list containing all currently active promotions
+     */
+    public List<Promotion> listActivePromotions() {
+        LocalDate today = LocalDate.now();
+        List<Promotion> activePromotions = new ArrayList<>();
+        for (Promotion p : promotions) {
+            if (p.isActive(today)) {
+                activePromotions.add(p);
+            }
+        }
+        return activePromotions;
+    }
+
+    /**
+     * Finds the active promotion that provides the highest discount for a given sale.
+     *
+     * @param sale the sale for which the best promotion is evaluated
+     * @return the promotion that provides the highest discount for the sale,
+     *         or null if no active promotion provides a discount
+     */
+    public Promotion findBestPromotionFor(Sale sale) {
+        Promotion bestPromotion = null;
+        double maxDiscount = 0.0;
+
+        for (Promotion p : listActivePromotions()) {
+            double discount = p.calculateDiscount(sale);
+            if (discount > maxDiscount) {
+                maxDiscount = discount;
+                bestPromotion = p;
+            }
+        }
+        return bestPromotion;
+    }
+
 }
