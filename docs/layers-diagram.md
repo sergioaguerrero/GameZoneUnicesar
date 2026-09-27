@@ -13,6 +13,8 @@ flowchart TD
         SaleService
         ProductService
         PersonService
+        AccessoryService
+        PromotionService
     end
 
     subgraph Persistence [Layer persistence]
@@ -20,6 +22,8 @@ flowchart TD
         PersonRepository
         SaleRepository
         ProductRepository
+        AccessoryRepository
+        PromotionRepository
     end
 
     subgraph Model [Layer model]
@@ -30,6 +34,14 @@ flowchart TD
         Product
         VideoGame
         Console
+        Accessory
+        Controller
+        Cable
+        Memory
+        Promotion
+        PercentageDiscount
+        CategoryDiscount
+        BulkPurchaseDiscount
         Sale
         SaleItem
     end

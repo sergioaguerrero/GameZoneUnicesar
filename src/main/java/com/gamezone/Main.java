@@ -1,11 +1,7 @@
 package com.gamezone;
 
-import com.gamezone.persistence.PersonRepository;
-import com.gamezone.persistence.ProductRepository;
-import com.gamezone.persistence.SaleRepository;
-import com.gamezone.service.PersonService;
-import com.gamezone.service.ProductService;
-import com.gamezone.service.SaleService;
+import com.gamezone.persistence.*;
+import com.gamezone.service.*;
 import com.gamezone.ui.ConsoleMenu;
 
 import java.util.Collections;
@@ -26,13 +22,22 @@ public class Main {
             ProductRepository productRepository = new ProductRepository();
             PersonRepository personRepository = new PersonRepository();
             SaleRepository saleRepository = new SaleRepository();
+            AccessoryRepository accessoryRepository = new AccessoryRepository();
+            PromotionRepository promotionRepository = new PromotionRepository(); // Nuevo
 
             ProductService productService = new ProductService(productRepository);
             PersonService personService = new PersonService(personRepository,
                     Collections.emptyList(), Collections.emptyList());
-            SaleService saleService = new SaleService(saleRepository, personService, productService);
+            AccessoryService accessoryService = new AccessoryService(accessoryRepository,
+                    accessoryRepository.loadAll());
+            PromotionService promotionService = new PromotionService(promotionRepository,
+                    promotionRepository.loadAll());
 
-            ConsoleMenu consoleMenu = new ConsoleMenu(productService, personService, saleService);
+            SaleService saleService = new SaleService(saleRepository, personService,
+                    productService, accessoryService, promotionService);
+
+            ConsoleMenu consoleMenu = new ConsoleMenu(productService, personService,
+                    saleService, accessoryService, promotionService);
             consoleMenu.start();
         } catch (RuntimeException e) {
             System.err.println("Fatal error: " + e.getMessage());
