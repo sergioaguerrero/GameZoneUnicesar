@@ -8,6 +8,7 @@ import java.util.List;
  * Represents a sale transaction in the GameZone system.
  */
 public class Sale {
+
     private LocalDate date;
     private Customer customer;
     private Seller seller;
@@ -18,9 +19,9 @@ public class Sale {
     /**
      * Constructs a new Sale transaction.
      *
-     * @param date     the date the sale was made
+     * @param date the date the sale was made
      * @param customer the customer making the purchase
-     * @param seller   the seller attending the sale
+     * @param seller the seller attending the sale
      */
     public Sale(LocalDate date, Customer customer, Seller seller) {
         this.date = date;
@@ -87,7 +88,8 @@ public class Sale {
     }
 
     /**
-     * Calculates the total amount of the sale by summing up the subtotals of all items.
+     * Calculates the total amount of the sale by summing up the subtotals of
+     * all items.
      *
      * @return the total cost of the sale
      */
@@ -109,11 +111,11 @@ public class Sale {
             throw new IllegalStateException("A sale must contain at least one product to be registered.");
         }
     }
-    
+
     /**
      * Generates a detailed receipt for the sale, including the sale date,
-     * customer, seller, purchased items, subtotal, applied discount, and
-     * final total.
+     * customer, seller, purchased items, subtotal, applied discount, and final
+     * total.
      *
      * @return a formatted string containing the detailed sale receipt
      */
@@ -144,4 +146,17 @@ public class Sale {
         return sb.toString();
     }
 
+    /**
+     * Checks whether this sale is still within the return period.
+     *
+     * A sale can be returned only while the current date is within 30 calendar
+     * days of the sale date, inclusive.
+     *
+     * @return true if the sale is still within the 30-day return window, false
+     * otherwise
+     */
+    public boolean canBeReturned() {
+        long daysSinceSale = java.time.temporal.ChronoUnit.DAYS.between(this.date, LocalDate.now());
+        return daysSinceSale >= 0 && daysSinceSale <= 30;
+    }
 }
