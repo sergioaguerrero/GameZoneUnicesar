@@ -24,6 +24,7 @@ public class SaleService {
     private final PersonService personService;
     private final ProductService productService;
     private final AccessoryService accessoryService;
+    private final PromotionService promotionService;
 
     /**
      * Initializes the SaleService with the required repositories and services.
@@ -32,13 +33,16 @@ public class SaleService {
      * @param personService    the service handling customers and sellers
      * @param productService   the service handling products and inventory
      * @param accessoryService the service handling accessories and their inventory
+     * @param promotionService the service handling promotions and their inventory
      */
     public SaleService(SaleRepository saleRepository, PersonService personService,
-                       ProductService productService, AccessoryService accessoryService) {
+                       ProductService productService, AccessoryService accessoryService,
+                       PromotionService promotionService) {
         this.saleRepository = saleRepository;
         this.personService = personService;
         this.productService = productService;
         this.accessoryService = accessoryService;
+        this.promotionService = promotionService;
     }
 
     /**
@@ -77,6 +81,13 @@ public class SaleService {
         Sale newSale = new Sale(LocalDate.now(), customer, seller);
         for (SaleItem item : items) {
             newSale.addItem(item);
+        }
+
+        Promotion bestPromotion = promotionService.findBestPromotionFor(newSale);
+        if (bestPromotion != null) {
+            double discount = bestPromotion.calculateDiscount(newSale);
+            newSale.setAppliedPromotionName(bestPromotion.getName());
+            newSale.setDiscountAmount(discount);
         }
 
         try {
