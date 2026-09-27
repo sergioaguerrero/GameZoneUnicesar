@@ -11,10 +11,7 @@ import com.gamezone.model.Sale;
 import com.gamezone.model.SaleItem;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
-import com.gamezone.service.AccessoryService;
-import com.gamezone.service.PersonService;
-import com.gamezone.service.ProductService;
-import com.gamezone.service.SaleService;
+import com.gamezone.service.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +34,7 @@ public class ConsoleMenu {
     private final SaleService saleService;
     private final AccessoryService accessoryService;
     private final Scanner scanner;
+    private final PromotionService promotionService;
 
     /**
      * Creates a new console menu backed by the given services.
@@ -47,12 +45,13 @@ public class ConsoleMenu {
      * @param accessoryService the service used for accessory operations
      */
     public ConsoleMenu(ProductService productService, PersonService personService,
-                       SaleService saleService, AccessoryService accessoryService) {
+                       SaleService saleService, AccessoryService accessoryService, PromotionService promotionService) {
         this.productService = productService;
         this.personService = personService;
         this.saleService = saleService;
         this.accessoryService = accessoryService;
         this.scanner = new Scanner(System.in);
+        this.promotionService = promotionService;
     }
 
     /**
@@ -67,6 +66,7 @@ public class ConsoleMenu {
             System.out.println("2. Gestión de personas");
             System.out.println("3. Gestión de ventas");
             System.out.println("4. Gestión de accesorios");
+            System.out.println("5. Gestión de promociones");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
             String option = scanner.nextLine().trim();
@@ -82,6 +82,9 @@ public class ConsoleMenu {
                     break;
                 case "4":
                     showAccessoryMenu();
+                    break;
+                case "5":
+                    showPromotionMenu();
                     break;
                 case "0":
                     running = false;
@@ -528,19 +531,118 @@ public class ConsoleMenu {
      * @return the formatted receipt text
      */
     private String formatSaleReceipt(Sale sale) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Venta [").append(sale.getDate()).append("] ")
-                .append("Cliente: ").append(sale.getCustomer().getName())
-                .append(" | Vendedor: ").append(sale.getSeller().getName())
-                .append("\n");
-        for (SaleItem item : sale.getItems()) {
-            sb.append("     - ").append(item.getProduct().getTitle())
-                    .append(" x").append(item.getQuantity())
-                    .append(" = $").append(String.format("%.2f", item.calculateSubtotal()))
-                    .append("\n");
+        return sale.generateReceipt();
+    }
+
+    // ---------------------------------------------------------------
+    // Promotion management
+    // ---------------------------------------------------------------
+
+    private void showPromotionMenu() {
+        boolean back = false;
+        while (!back) {
+            System.out.println();
+            System.out.println("----- Gestión de promociones -----");
+            System.out.println("1. Registrar promoción de porcentaje");
+            System.out.println("2. Registrar promoción de categoría");
+            System.out.println("3. Registrar promoción de volumen");
+            System.out.println("4. Listar todas las promociones");
+            System.out.println("5. Listar promociones vigentes hoy");
+            System.out.println("0. Volver");
+            System.out.print("Seleccione una opción: ");
+            String option = scanner.nextLine().trim();
+            switch (option) {
+                case "1":
+                    registerPercentagePromotion();
+                    break;
+                case "2":
+                    registerCategoryPromotion();
+                    break;
+                case "3":
+                    registerBulkPromotion();
+                    break;
+                case "4":
+                    listPromotions(promotionService.listAllPromotions());
+                    break;
+                case "5":
+                    listPromotions(promotionService.listActivePromotions());
+                    break;
+                case "0":
+                    back = true;
+                    break;
+                default:
+                    System.out.println("Opción inválida.");
+            }
         }
-        sb.append("     Total: $").append(String.format("%.2f", sale.calculateTotal()));
-        return sb.toString();
+    }
+
+    private void registerPercentagePromotion() {
+        String id = readRequiredText("ID: ");
+        String name = readRequiredText("Nombre de la promoción: ");
+        java.time.LocalDate startDate = readRequiredDate("Fecha inicio (AAAA-MM-DD): ");
+        java.time.LocalDate endDate = readRequiredDate("Fecha fin (AAAA-MM-DD): ");
+        double percentage = readPositiveDouble("Porcentaje de descuento (0-100): ");
+        try {
+            promotionService.registerPercentage(id, name, startDate, endDate, percentage);
+            System.out.println("Promoción registrada exitosamente.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void registerCategoryPromotion() {
+        String id = readRequiredText("ID: ");
+        String name = readRequiredText("Nombre de la promoción: ");
+        java.time.LocalDate startDate = readRequiredDate("Fecha inicio (AAAA-MM-DD): ");
+        java.time.LocalDate endDate = readRequiredDate("Fecha fin (AAAA-MM-DD): ");
+        double percentage = readPositiveDouble("Porcentaje de descuento (0-100): ");
+        String category = readRequiredText("Categoría (VIDEOGAME o CONSOLE): ").toUpperCase();
+        try {
+            promotionService.registerCategory(id, name, startDate, endDate, percentage, category);
+            System.out.println("Promoción registrada exitosamente.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void registerBulkPromotion() {
+        String id = readRequiredText("ID: ");
+        String name = readRequiredText("Nombre de la promoción: ");
+        java.time.LocalDate startDate = readRequiredDate("Fecha inicio (AAAA-MM-DD): ");
+        java.time.LocalDate endDate = readRequiredDate("Fecha fin (AAAA-MM-DD): ");
+        int minQuantity = readPositiveInt("Cantidad mínima de ítems: ");
+        double percentage = readPositiveDouble("Porcentaje de descuento (0-100): ");
+        try {
+            promotionService.registerBulk(id, name, startDate, endDate, minQuantity, percentage);
+            System.out.println("Promoción registrada exitosamente.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void listPromotions(List<com.gamezone.model.Promotion> list) {
+        if (list.isEmpty()) {
+            System.out.println("No se encontraron promociones.");
+            return;
+        }
+        int index = 1;
+        for (com.gamezone.model.Promotion p : list) {
+            System.out.println(index + ". [" + p.getId() + "] " + p.getName()
+                    + " (Vigencia: " + p.getStartDate() + " a " + p.getEndDate() + ")");
+            index++;
+        }
+    }
+
+    private java.time.LocalDate readRequiredDate(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String raw = scanner.nextLine().trim();
+            try {
+                return java.time.LocalDate.parse(raw);
+            } catch (Exception e) {
+                System.out.println("Formato de fecha inválido. Intente de nuevo usando AAAA-MM-DD.");
+            }
+        }
     }
 
     // ---------------------------------------------------------------
