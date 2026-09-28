@@ -16,6 +16,7 @@ public class Sale {
     private List<SaleItem> items;
     private String appliedPromotionName;
     private double discountAmount = 0.0;
+    private double extendedWarrantyCost = 0.0;
 
     /**
      * Constructs a new Sale transaction.
@@ -89,6 +90,14 @@ public class Sale {
         this.discountAmount = discountAmount;
     }
 
+    public double getExtendedWarrantyCost() {
+        return extendedWarrantyCost;
+    }
+
+    public void setExtendedWarrantyCost(double extendedWarrantyCost) {
+        this.extendedWarrantyCost = extendedWarrantyCost;
+    }
+
     /**
      * Adds a new item to the sale's item list.
      *
@@ -113,6 +122,17 @@ public class Sale {
     }
 
     /**
+     * Calculates the final amount the customer has to pay: the items
+     * subtotal, minus the applied promotion discount, plus the additional
+     * cost of the extended warranties selected for this sale.
+     *
+     * @return the final total of the sale
+     */
+    public double calculateFinalTotal() {
+        return calculateTotal() - discountAmount + extendedWarrantyCost;
+    }
+
+    /**
      * Registers the sale and validates that it contains at least one product.
      *
      * @throws IllegalStateException if the sale has no items
@@ -132,7 +152,7 @@ public class Sale {
      */
     public String generateReceipt() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Venta [").append(date).append("] ")
+        sb.append("Venta ").append(id).append(" [").append(date).append("] ")
                 .append("Cliente: ").append(customer.getName())
                 .append(" | Vendedor: ").append(seller.getName())
                 .append("\n");
@@ -152,8 +172,12 @@ public class Sale {
                     .append(String.format("%.2f", discountAmount)).append("\n");
         }
 
-        double finalTotal = subtotal - discountAmount;
-        sb.append("     Total Final: $").append(String.format("%.2f", finalTotal));
+        if (extendedWarrantyCost > 0) {
+            sb.append("     Garantía extendida: +$")
+                    .append(String.format("%.2f", extendedWarrantyCost)).append("\n");
+        }
+
+        sb.append("     Total Final: $").append(String.format("%.2f", calculateFinalTotal()));
 
         return sb.toString();
     }
