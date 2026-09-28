@@ -178,6 +178,41 @@ classDiagram
         +double calculateFinalTotal()
         +String generateReceipt()
         +void register()
+        +boolean canBeReturned()
+    }
+
+    class Return {
+        -String returnId
+        -LocalDate returnDate
+        -Sale originalSale
+        -List~Product~ returnedProducts
+        -String reason
+        -double refundAmount
+        +String getReturnId()
+        +LocalDate getReturnDate()
+        +Sale getOriginalSale()
+        +List~Product~ getReturnedProducts()
+        +String getReason()
+        +double getRefundAmount()
+        +double calculateRefundAmount()
+        +String generateReturnReceipt()
+    }
+
+    class ReturnRepository {
+        +void saveAll(List~Return~ returns)
+        +List~Return~ loadAll()
+    }
+
+    class ReturnService {
+        +Return registerReturn(String saleId, List~String~ productIds, String reason)
+        +List~Return~ viewAllReturns()
+        +List~Return~ viewReturnsByCustomer(String customerId)
+        +List~Return~ viewReturnsBySale(String saleId)
+        +double generateMonthlyBalance(int month, int year)
+    }
+
+    class ProductService {
+        +void restoreStock(String productId, int quantity)
     }
 
     class SaleItem {
@@ -215,3 +250,9 @@ classDiagram
     CategoryDiscount ..> VideoGame : checks category via instanceof
     CategoryDiscount ..> Console : checks category via instanceof
     Sale "1" --> "0..1" Promotion : applied promotion (by name, not object reference)
+
+    Return "0..*" --> "1" Sale : references
+    Return "0..*" --> "1..*" Product : contains
+    ReturnService ..> ReturnRepository : uses
+    ReturnService ..> Return : manages
+    ReturnService ..> ProductService : calls restoreStock
