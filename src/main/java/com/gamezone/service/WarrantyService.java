@@ -24,7 +24,6 @@ public class WarrantyService {
      * Initializes the WarrantyService with the required repository and initial warranties list.
      *
      * @param warrantyRepository the repository handling warranty persistence
-     * @param warranties         the list of warranty objects
      */
     public WarrantyService(WarrantyRepository warrantyRepository) {
         this.warrantyRepository = warrantyRepository;
