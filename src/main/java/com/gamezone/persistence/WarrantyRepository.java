@@ -4,10 +4,14 @@ import com.gamezone.model.*;
 import com.gamezone.service.ProductService;
 import com.gamezone.service.SaleService;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,8 +25,47 @@ public class WarrantyRepository {
     private static final String FILE_PATH = "data/warranties.csv";
     private static final String EXTENDED_TYPE = "EXTENDED";
     private static final String BASIC_TYPE = "BASIC";
-    private ProductService productService;
-    private SaleService saleService;
+    private final ProductService productService;
+    private final SaleService saleService;
+
+    /**
+     * Creates the repository with the services needed to resolve references.
+     *
+     * @param productService service used to resolve products while loading
+     * @param saleService    service used to resolve sales while loading
+     */
+    public WarrantyRepository(ProductService productService, SaleService saleService) {
+        this.productService = productService;
+        this.saleService = saleService;
+    }
+
+    /**
+     * Loads all warranties from the CSV file.
+     *
+     * @return the loaded warranties; empty list if the file does not exist
+     */
+    public List<Warranty> loadAll() {
+        List<Warranty> result = new ArrayList<>();
+        File file = new File(FILE_PATH);
+        if (!file.exists()) {
+            return result;
+        }
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.isBlank()) {
+                    continue;
+                }
+                Warranty w = fromCsvLine(line);
+                if (w != null) {
+                    result.add(w);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load warranties from " + FILE_PATH, e);
+        }
+        return result;
+    }
 
     /**
      * Saves a list of warranties to the CSV file.
@@ -70,6 +113,9 @@ public class WarrantyRepository {
             }
         }
 
+        if (product == null || sale == null) {
+            return null;
+        }
         if (EXTENDED_TYPE.equals(type)) {
             return new ExtendedWarranty(id, product, sale, startDate);
         }

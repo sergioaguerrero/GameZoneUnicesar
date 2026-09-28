@@ -26,9 +26,9 @@ public class WarrantyService {
      * @param warrantyRepository the repository handling warranty persistence
      * @param warranties         the list of warranty objects
      */
-    public WarrantyService(WarrantyRepository warrantyRepository, List<Warranty> warranties) {
+    public WarrantyService(WarrantyRepository warrantyRepository) {
         this.warrantyRepository = warrantyRepository;
-        this.warranties = warranties;
+        this.warranties = warrantyRepository.loadAll();
     }
 
     /**
@@ -41,7 +41,10 @@ public class WarrantyService {
      */
     public BasicWarranty assignBasicWarranty(Product product, Sale sale, LocalDate startdate){
         String Id = "WAT-" + UUID.randomUUID().toString().substring(0, 8);
-        return new BasicWarranty(Id, product, sale, startdate);
+        BasicWarranty warranty = new BasicWarranty(Id, product, sale, startdate);
+        warranties.add(warranty);
+        persist();
+        return warranty;
     }
 
     /**
@@ -54,7 +57,10 @@ public class WarrantyService {
      */
     public ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startdate){
         String Id = "WAT-" + UUID.randomUUID().toString().substring(0, 8);
-        return new ExtendedWarranty(Id, product, sale, startdate);
+        ExtendedWarranty warranty = new ExtendedWarranty(Id, product, sale, startdate);
+        warranties.add(warranty);
+        persist();
+        return warranty;
     }
 
     /**
@@ -109,13 +115,8 @@ public class WarrantyService {
         List<Warranty> activeWarranties = new ArrayList<>();
 
         for (Warranty warranty : warranties) {
-            LocalDate startDate = warranty.getStartDate();
-            LocalDate endDate = calculateEndDate(warranty);
-
-            if (startDate != null && endDate != null) {
-                if (!today.isBefore(startDate) && !today.isAfter(endDate)) {
-                    activeWarranties.add(warranty);
-                }
+            if (warranty.isActive(today)) {
+                activeWarranties.add(warranty);
             }
         }
         return activeWarranties;
@@ -133,32 +134,12 @@ public class WarrantyService {
         List<Warranty> expiringSoon = new ArrayList<>();
 
         for (Warranty warranty : warranties) {
-            LocalDate endDate = calculateEndDate(warranty);
-            if (endDate != null) {
-                if (!endDate.isBefore(today) && !endDate.isAfter(limitDate)) {
-                    expiringSoon.add(warranty);
-                }
+            LocalDate endDate = warranty.getEndDate();
+            if (!endDate.isBefore(today) && !endDate.isAfter(limitDate)) {
+                expiringSoon.add(warranty);
             }
         }
         return expiringSoon;
-    }
-
-    /**
-     * Helper method to determine the end date of a warranty based on its type.
-     * Extended warranties last 12 months, and Basic warranties last 6 months.
-     *
-     * @param warranty the warranty object
-     * @return the calculated end date
-     */
-    private LocalDate calculateEndDate(Warranty warranty) {
-        if (warranty.getStartDate() == null) {
-            return null;
-        }
-        if (warranty instanceof ExtendedWarranty) {
-            return warranty.getStartDate().plusMonths(12);
-        } else {
-            return warranty.getStartDate().plusMonths(6);
-        }
     }
 
     /**
