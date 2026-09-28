@@ -1,3 +1,12 @@
-RET-a1b2c3d4,2026-05-12,El producto no era compatible con la consola,001
-RET-e5f6g7h8,2026-06-01,El cliente encontro un juego diferente,002
-RET-i9j0k1l2,2026-06-15,El cartucho presenta fallas de lectura,003
+RET-1a2b3c4d,2025-10-15,El mando presenta deriva en el joystick,SALE-0001
+RET-2b3c4d5e,2025-12-12,El cliente encontro un juego diferente,SALE-0002
+RET-3c4d5e6f,2026-01-20,La consola no enciende,SALE-0003
+RET-4d5e6f7a,2026-04-02,El cable HDMI no es compatible,SALE-0004
+RET-5e6f7a8b,2026-04-18,El cliente se arrepintio de la compra,SALE-0005
+RET-6f7a8b9c,2026-05-25,El disco presenta fallas de lectura,SALE-0006
+RET-7a8b9c0d,2026-07-20,El producto llego con la caja danada,SALE-0007
+RET-8b9c0d1e,2026-08-25,El cliente encontro un mejor precio,SALE-0008
+RET-9c0d1e2f,2026-09-10,El juego no era compatible con la consola,SALE-0009
+RET-0d1e2f3a,2026-09-18,Tarjeta SD defectuosa,SALE-0010
+RET-1e2f3a4b,2026-09-24,El cliente pidio otro modelo,SALE-0011
+RET-2f3a4b5c,2026-09-27,El control no sincroniza,SALE-0012
