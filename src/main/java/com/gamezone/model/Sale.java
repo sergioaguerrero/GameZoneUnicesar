@@ -9,6 +9,7 @@ import java.util.List;
  */
 public class Sale {
 
+    private String id;
     private LocalDate date;
     private Customer customer;
     private Seller seller;
@@ -19,15 +20,25 @@ public class Sale {
     /**
      * Constructs a new Sale transaction.
      *
+     * @param id the unique identifier of the sale
      * @param date the date the sale was made
      * @param customer the customer making the purchase
      * @param seller the seller attending the sale
      */
-    public Sale(LocalDate date, Customer customer, Seller seller) {
+    public Sale(String id, LocalDate date, Customer customer, Seller seller) {
+        this.id = id;
         this.date = date;
         this.customer = customer;
         this.seller = seller;
         this.items = new ArrayList<>();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public LocalDate getDate() {
@@ -125,6 +136,7 @@ public class Sale {
                 .append("Cliente: ").append(customer.getName())
                 .append(" | Vendedor: ").append(seller.getName())
                 .append("\n");
+
         for (SaleItem item : items) {
             sb.append("     - ").append(item.getProduct().getTitle())
                     .append(" x").append(item.getQuantity())
