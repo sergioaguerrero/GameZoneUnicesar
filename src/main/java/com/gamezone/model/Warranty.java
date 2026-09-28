@@ -124,4 +124,35 @@ public abstract class Warranty {
      * @return the additional cost in pesos
      */
     public abstract double getAdditionalCost();
+
+    /**
+     * Checks whether this warranty is valid on the given date.
+     *
+     * @param date the date to check
+     * @return true if the date is between the start date and the end date (both
+     * inclusive), false otherwise
+     */
+    public boolean isActive(LocalDate date) {
+        return date != null && !date.isBefore(startDate) && !date.isAfter(endDate);
+    }
+
+    /**
+     * Builds a formatted certificate, in Spanish, with the detail of this
+     * warranty: identifier, type, covered product, sale date, validity period
+     * and additional cost.
+     *
+     * @return the warranty certificate
+     */
+    public String generateWarrantyCertificate() {
+        StringBuilder certificate = new StringBuilder();
+        certificate.append("=== Certificado de Garantía ===\n");
+        certificate.append("Identificador: ").append(warrantyId).append("\n");
+        certificate.append("Tipo: ").append(getWarrantyType()).append("\n");
+        certificate.append("Producto: ").append(product.getTitle()).append("\n");
+        certificate.append("Fecha de venta: ").append(sale.getDate()).append("\n");
+        certificate.append("Vigencia: ").append(startDate).append(" a ").append(endDate)
+                .append(" (").append(getDurationInMonths()).append(" meses)\n");
+        certificate.append(String.format("Costo adicional: $%.2f%n", getAdditionalCost()));
+        return certificate.toString();
+    }
 }
