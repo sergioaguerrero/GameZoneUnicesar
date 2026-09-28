@@ -133,7 +133,23 @@ public class ProductService {
         product.decreaseStock(quantity);
         persist();
     }
+    /**
+     * Increases the stock of a given product by the specified quantity and
+     * persists the change. Intended to be called when a product return is registered.
+     *
+     * @param productId the id of the product whose stock will be restored
+     * @param quantity the quantity to add to stock
+     * @throws IllegalArgumentException if the product does not exist
+     */
+    public void restoreStock(String productId, int quantity) {
+        Product product = findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Product not found: " + productId));
 
+        // Aumenta el stock sumando la cantidad devuelta
+        product.increaseStock(quantity);
+        persist();
+    }
     /**
      * Updates the common attributes of an existing product (title, price and
      * stock quantity). Does not modify type-specific attributes.
