@@ -5,7 +5,7 @@ flowchart TD
     subgraph UI [Layer ui]
         direction TB
         Main
-        UserInterface
+        ConsoleMenu
     end
 
     subgraph Service [Layer service]
@@ -15,6 +15,7 @@ flowchart TD
         PersonService
         AccessoryService
         PromotionService
+        WarrantyService
     end
 
     subgraph Persistence [Layer persistence]
@@ -24,6 +25,7 @@ flowchart TD
         ProductRepository
         AccessoryRepository
         PromotionRepository
+        WarrantyRepository
     end
 
     subgraph Model [Layer model]
@@ -44,9 +46,13 @@ flowchart TD
         BulkPurchaseDiscount
         Sale
         SaleItem
+        Warranty
+        BasicWarranty
+        ExtendedWarranty
     end
 
     UI --> Service
     Service --> Persistence
     Service --> Model
     Persistence --> Model
+```

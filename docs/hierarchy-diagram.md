@@ -28,6 +28,12 @@ direction TB
     class CategoryDiscount
     class BulkPurchaseDiscount
 
+    class Warranty {
+        <<abstract>>
+    }
+    class BasicWarranty
+    class ExtendedWarranty
+
     Person <|-- Customer
     Person <|-- Seller
 
@@ -42,3 +48,7 @@ direction TB
     Promotion <|-- PercentageDiscount
     Promotion <|-- CategoryDiscount
     Promotion <|-- BulkPurchaseDiscount
+
+    Warranty <|-- BasicWarranty
+    Warranty <|-- ExtendedWarranty
+```

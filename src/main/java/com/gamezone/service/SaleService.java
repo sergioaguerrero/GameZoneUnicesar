@@ -18,6 +18,12 @@ import java.util.List;
  * updates to {@link AccessoryService} when the sold item is an accessory,
  * and combining products and accessories into a single master list when
  * resolving persisted sales.
+ *
+ * The warranty module was integrated additively: registering a sale now
+ * automatically generates a basic warranty for every console sold and,
+ * when requested, an extended warranty whose additional cost is added to the
+ * sale total. All warranty rules live in {@link WarrantyService}; this class
+ * only decides when to invoke them.
  */
 public class SaleService {
     private final SaleRepository saleRepository;
@@ -25,6 +31,7 @@ public class SaleService {
     private final ProductService productService;
     private final AccessoryService accessoryService;
     private final PromotionService promotionService;
+    private WarrantyService warrantyService;
 
     /**
      * Initializes the SaleService with the required repositories and services.
@@ -46,8 +53,22 @@ public class SaleService {
     }
 
     /**
-     * Registers a new sale by validating the actors, verifying product stock,
-     * creating the transaction, decreasing stock, and saving it to the repository.
+     * Injects the warranty service. It is set after construction (setter
+     * injection) because {@code WarrantyRepository} needs this service to
+     * resolve the sales referenced by persisted warranties, so a constructor
+     * parameter would create a circular dependency.
+     *
+     * @param warrantyService the service handling warranties
+     */
+    public void setWarrantyService(WarrantyService warrantyService) {
+        this.warrantyService = warrantyService;
+    }
+
+    /**
+     * Registers a new sale without any extended warranty. Kept so existing
+     * callers keep working; equivalent to calling
+     * {@link #registerSale(String, String, List, List)} with no extended
+     * warranty requested.
      *
      * @param customerId the ID of the customer making the purchase
      * @param sellerId   the ID of the seller handling the transaction
@@ -55,6 +76,30 @@ public class SaleService {
      * @return true if the sale was successfully registered, false otherwise
      */
     public boolean registerSale(String customerId, String sellerId, List<SaleItem> items) {
+        return registerSale(customerId, sellerId, items, null);
+    }
+
+    /**
+     * Registers a new sale by validating the actors, verifying product stock,
+     * creating the transaction, generating the warranties, decreasing stock,
+     * and saving it to the repository.
+     *
+     * A basic warranty (free) is generated automatically for every
+     * {@link Console} in the sale. For each console whose id is listed in
+     * {@code productIdsWithExtendedWarranty}, an extended warranty is also
+     * generated and its additional cost is added to the sale total. Video
+     * games and accessories never receive a warranty.
+     *
+     * @param customerId                     the ID of the customer making the purchase
+     * @param sellerId                       the ID of the seller handling the transaction
+     * @param items                          the list of items to be purchased
+     * @param productIdsWithExtendedWarranty ids of the consoles that must get an
+     *                                       extended warranty; {@code null} or empty
+     *                                       means none
+     * @return true if the sale was successfully registered, false otherwise
+     */
+    public boolean registerSale(String customerId, String sellerId, List<SaleItem> items,
+                                List<String> productIdsWithExtendedWarranty) {
         Customer customer = personService.findCustomer(customerId);
         Seller seller = personService.findSeller(sellerId);
 
@@ -78,7 +123,18 @@ public class SaleService {
             }
         }
 
-        Sale newSale = new Sale(LocalDate.now(), customer, seller);
+        List<String> extendedIds = productIdsWithExtendedWarranty != null
+                ? productIdsWithExtendedWarranty : new ArrayList<>();
+        for (String extendedId : extendedIds) {
+            if (!isConsoleInItems(extendedId, items)) {
+                System.err.println("Extended warranty is only available for consoles included in the sale: "
+                        + extendedId);
+                return false;
+            }
+        }
+
+        List<Sale> existingSales = listAllSales();
+        Sale newSale = new Sale(nextSaleId(existingSales), LocalDate.now(), customer, seller);
         for (SaleItem item : items) {
             newSale.addItem(item);
         }
@@ -92,16 +148,13 @@ public class SaleService {
 
         try {
             newSale.register();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             System.err.println("Error registering: " + e.getMessage());
             return false;
         }
 
-        List<Customer> customers = personService.listCustomer();
-        List<Seller> sellers = personService.listSeller();
-        List<Product> products = allSellableItems();
+        applyWarranties(newSale, extendedIds);
 
-        List<Sale> existingSales = saleRepository.loadSales(customers, sellers, products);
         existingSales.add(newSale);
         saleRepository.saveSales(existingSales);
 
@@ -116,6 +169,75 @@ public class SaleService {
 
         System.out.println("Sale registered successfully");
         return true;
+    }
+
+    /**
+     * Generates the warranties of a sale. Every console gets a free basic
+     * warranty; consoles whose id is in {@code extendedIds} also get an
+     * extended warranty, whose additional cost is added to the sale.
+     * The type check uses {@code instanceof} because only the real type of
+     * the product (Console vs VideoGame vs Accessory) decides the rule.
+     *
+     * @param sale        the sale that was just created
+     * @param extendedIds ids of the consoles that must get an extended warranty
+     */
+    private void applyWarranties(Sale sale, List<String> extendedIds) {
+        if (warrantyService == null) {
+            throw new IllegalStateException("WarrantyService has not been configured in SaleService");
+        }
+        double extendedCost = 0.0;
+        for (SaleItem item : sale.getItems()) {
+            Product product = item.getProduct();
+            if (product instanceof Console) {
+                warrantyService.assignBasicWarranty(product, sale, sale.getDate());
+                if (extendedIds.contains(product.getProductId())) {
+                    ExtendedWarranty extended =
+                            warrantyService.assignExtendedWarranty(product, sale, sale.getDate());
+                    extendedCost += extended.getAdditionalCost();
+                }
+            }
+        }
+        sale.setExtendedWarrantyCost(extendedCost);
+    }
+
+    /**
+     * Checks whether the given product id belongs to a console included in
+     * the given items.
+     *
+     * @param productId the product id to look for
+     * @param items     the items of the sale
+     * @return true if a console with that id is among the items
+     */
+    private boolean isConsoleInItems(String productId, List<SaleItem> items) {
+        for (SaleItem item : items) {
+            if (item.getProduct() instanceof Console
+                    && item.getProduct().getProductId().equals(productId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Generates the identifier of the next sale, following the pattern
+     * {@code SALE-0001}, one above the highest existing sequence number.
+     *
+     * @param existingSales the sales already registered
+     * @return a new unique sale id
+     */
+    private String nextSaleId(List<Sale> existingSales) {
+        int max = 0;
+        for (Sale sale : existingSales) {
+            String id = sale.getId();
+            if (id != null && id.startsWith("SALE-")) {
+                try {
+                    max = Math.max(max, Integer.parseInt(id.substring(5)));
+                } catch (NumberFormatException ignored) {
+                    // ids with a custom format do not affect the sequence
+                }
+            }
+        }
+        return String.format("SALE-%04d", max + 1);
     }
 
     /**

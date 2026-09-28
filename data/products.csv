@@ -1,3 +1,15 @@
-VIDEOGAME,123,God of Peru,200.0,66,PeruStation,Terror,+67
-VIDEOGAME,321,aed,324.0,4,dsf,sdf,3
-VIDEOGAME,,adf,-12.0,3,df,d,3
+CONSOLE,501,PlayStation 5,2300000.0,8,Sony,PS5,9
+CONSOLE,502,Xbox Series X,2400000.0,6,Microsoft,Series X,9
+CONSOLE,503,Nintendo Switch OLED,1500000.0,12,Nintendo,Switch OLED,8
+CONSOLE,504,PlayStation 4 Slim,1100000.0,5,Sony,PS4 Slim,8
+CONSOLE,505,Steam Deck,1900000.0,4,Valve,Steam Deck 512GB,1
+VIDEOGAME,101,God of War Ragnarok,210000.0,15,PS5,Accion,M
+VIDEOGAME,102,Elden Ring,180000.0,12,Multiplataforma,RPG,M
+VIDEOGAME,103,Zelda Tears of the Kingdom,250000.0,10,Switch,Aventura,E10+
+VIDEOGAME,104,EA Sports FC 25,200000.0,20,Multiplataforma,Deportes,E
+VIDEOGAME,105,Halo Infinite,120000.0,9,Xbox,Shooter,T
+VIDEOGAME,106,Mario Kart 8 Deluxe,230000.0,14,Switch,Carreras,E
+VIDEOGAME,107,Spider-Man 2,220000.0,11,PS5,Accion,T
+VIDEOGAME,108,Forza Horizon 5,160000.0,8,Xbox,Carreras,E
+VIDEOGAME,109,Hollow Knight,60000.0,25,Multiplataforma,Plataformas,E10+
+VIDEOGAME,110,Minecraft,90000.0,30,Multiplataforma,Sandbox,E10+

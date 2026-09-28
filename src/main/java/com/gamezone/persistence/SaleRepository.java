@@ -14,7 +14,8 @@ public class SaleRepository {
     private static final String saleCSV = "data/sales.csv";
 
     /**
-     * Serializes a Sale object into a CSV formatted text line.
+     * Serializes a Sale object into a CSV formatted text line with the format
+     * {@code id,date,customerId,sellerId,items,extendedWarrantyCost}.
      *
      * @param sale the sale to serialize
      * @return the serialized string representing the sale
@@ -22,6 +23,7 @@ public class SaleRepository {
     public String saleLine(Sale sale){
         StringBuilder sb = new StringBuilder();
 
+        sb.append(sale.getId()).append(",");
         sb.append(sale.getDate().toString()).append(",");
         sb.append(sale.getCustomer().getId()).append(",");
         sb.append(sale.getSeller().getId()).append(",");
@@ -30,7 +32,8 @@ public class SaleRepository {
         for (SaleItem item : sale.getItems()){
             itemsList.add(item.getProduct().getProductId() + ":" + item.getQuantity());
         }
-        sb.append(String.join(";", itemsList));
+        sb.append(String.join(";", itemsList)).append(",");
+        sb.append(sale.getExtendedWarrantyCost());
 
         return sb.toString();
     }
@@ -55,6 +58,14 @@ public class SaleRepository {
     /**
      * Loads the sales from the CSV file and reconstructs the objects.
      *
+     * The current format is {@code id,date,customerId,sellerId,items,extendedWarrantyCost}.
+     * Legacy lines written before sales had an identifier
+     * ({@code date,customerId,sellerId,items}) are still supported: they
+     * receive a deterministic id based on their line number
+     * ({@code SALE-0001}, {@code SALE-0002}, ...), which is persisted the next
+     * time the sales are saved. If the file does not exist, an empty list is
+     * returned.
+     *
      * @param allCustomers the master list of customers
      * @param allSellers   the master list of sellers
      * @param allProducts  the master list of products
@@ -65,34 +76,49 @@ public class SaleRepository {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(saleCSV))) {
             String line;
+            int lineNumber = 0;
             while ((line = reader.readLine()) != null) {
-                String[] splits = line.split(",");
+                lineNumber++;
+                if (line.isBlank()) {
+                    continue;
+                }
+                String[] splits = line.split(",", -1);
 
-                if (splits.length >= 4) {
-                    LocalDate date = LocalDate.parse(splits[0]);
-                    String customerId = splits[1];
-                    String sellerId = splits[2];
-                    String itemsData = splits[3];
+                boolean legacy = splits[0].matches("\\d{4}-\\d{2}-\\d{2}");
+                if (legacy ? splits.length < 4 : splits.length < 5) {
+                    continue;
+                }
 
-                    Customer customer = findCustomerById(allCustomers, customerId);
-                    Seller seller = findSellerById(allSellers, sellerId);
+                int offset = legacy ? 0 : 1;
+                String id = legacy ? String.format("SALE-%04d", lineNumber) : splits[0];
+                LocalDate date = LocalDate.parse(splits[offset]);
+                String customerId = splits[offset + 1];
+                String sellerId = splits[offset + 2];
+                String itemsData = splits[offset + 3];
+                double warrantyCost = 0.0;
+                if (!legacy && splits.length > 5 && !splits[5].isBlank()) {
+                    warrantyCost = Double.parseDouble(splits[5]);
+                }
 
-                    if (customer != null && seller != null) {
-                        Sale sale = new Sale(date, customer, seller);
+                Customer customer = findCustomerById(allCustomers, customerId);
+                Seller seller = findSellerById(allSellers, sellerId);
 
-                        String[] itemsArray = itemsData.split(";");
-                        for (String itemStr : itemsArray) {
-                            String[] itemParts = itemStr.split(":");
-                            String productId = itemParts[0];
-                            int quantity = Integer.parseInt(itemParts[1]);
+                if (customer != null && seller != null) {
+                    Sale sale = new Sale(id, date, customer, seller);
+                    sale.setExtendedWarrantyCost(warrantyCost);
 
-                            Product product = findProductById(allProducts, productId);
-                            if (product != null) {
-                                sale.addItem(new SaleItem(product, quantity));
-                            }
+                    String[] itemsArray = itemsData.split(";");
+                    for (String itemStr : itemsArray) {
+                        String[] itemParts = itemStr.split(":");
+                        String productId = itemParts[0];
+                        int quantity = Integer.parseInt(itemParts[1]);
+
+                        Product product = findProductById(allProducts, productId);
+                        if (product != null) {
+                            sale.addItem(new SaleItem(product, quantity));
                         }
-                        sales.add(sale);
                     }
+                    sales.add(sale);
                 }
             }
             System.out.println("Sales successfully loaded from " + saleCSV);

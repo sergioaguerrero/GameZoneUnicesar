@@ -36,8 +36,12 @@ public class Main {
             SaleService saleService = new SaleService(saleRepository, personService,
                     productService, accessoryService, promotionService);
 
+            WarrantyRepository warrantyRepository = new WarrantyRepository(productService, saleService);
+            WarrantyService warrantyService = new WarrantyService(warrantyRepository);
+            saleService.setWarrantyService(warrantyService);
+
             ConsoleMenu consoleMenu = new ConsoleMenu(productService, personService,
-                    saleService, accessoryService, promotionService);
+                    saleService, accessoryService, promotionService, warrantyService);
             consoleMenu.start();
         } catch (RuntimeException e) {
             System.err.println("Fatal error: " + e.getMessage());
