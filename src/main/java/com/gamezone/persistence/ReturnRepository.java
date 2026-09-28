@@ -93,4 +93,33 @@ public class ReturnRepository {
         return null;
     }
 
+    /**
+     * Loads all returns from the CSV file.
+     *
+     * @return a list containing all the persisted returns
+     */
+    public List<Return> loadAll() {
+        List<Return> returns = new ArrayList<>();
+        java.io.File file = new java.io.File(FILE_PATH);
+        if (!file.exists()) {
+            return returns;
+        }
+
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+                Return ret = fromCsvLine(line);
+                if (ret != null) {
+                    returns.add(ret);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to load returns from " + FILE_PATH + ": " + e.getMessage());
+        }
+        return returns;
+    }
+
 }
