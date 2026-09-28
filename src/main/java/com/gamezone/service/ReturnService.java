@@ -100,6 +100,7 @@ public class ReturnService {
         newReturn.calculateRefundAmount();
         returns.add(newReturn);
         System.out.println("Devolución registrada exitosamente.");
+        returnRepository.saveAll(returns);
         return newReturn;
     }
 
