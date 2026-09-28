@@ -5,7 +5,8 @@ GameZone Unicesar is a console-based software solution designed to manage invent
 - **Inventory Management:** Register and manage video games, consoles, and accessories.
 - **Person Management:** Track customers and sellers.
 - **Sales Transactions:** Process sales with automatic stock updates and generated receipts.
-- **Promotions Management (New):** Apply automatic discounts based on active promotional campaigns (Percentage, Category, and Bulk Purchase discounts) to automatically offer the best price to the customer.
+- **Promotions Management:** Apply automatic discounts based on active promotional campaigns (Percentage, Category, and Bulk Purchase discounts) to automatically offer the best price to the customer.
+- **Returns Management (New):** Register product returns enforcing business rules (30-day deadline, sale ownership), restoring stock, generating receipts, and querying the monthly net balance (Sales - Returns).
 
 ## Technologies Used
 * **Java:** JDK 26
@@ -84,10 +85,12 @@ See [TEAM.md](TEAM.md) for roles, module ownership, and committed activities.
 ## Design Documentation
 
 - [Analysis](docs/analysis.md)
-- [Promotion Analysis (New)](docs/promotion-analysis.md)
+- [Promotion Analysis](docs/promotion-analysis.md)
+- [Return Analysis (New)](docs/return-analysis.md)
 - [Hierarchy Diagram](docs/hierarchy-diagram.md)
 - [Class Diagram](docs/class-diagram.md)
-- [Promotion Class Diagram (New)](docs/promotion-class-diagram.md)
+- [Promotion Class Diagram](docs/promotion-class-diagram.md)
+- [Return Class Diagram (New)](docs/return-class-diagram.md)
 - [Layers Diagram](docs/layers-diagram.md)
 
 ## AI Usage Logs
