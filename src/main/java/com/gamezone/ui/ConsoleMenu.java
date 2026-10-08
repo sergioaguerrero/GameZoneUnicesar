@@ -11,8 +11,10 @@ import com.gamezone.model.Sale;
 import com.gamezone.model.SaleItem;
 import com.gamezone.model.Seller;
 import com.gamezone.model.VideoGame;
+import com.gamezone.model.Warranty;
 import com.gamezone.service.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -466,6 +468,7 @@ public class ConsoleMenu {
         int count = readPositiveInt("Cantidad de ítems distintos a vender: ");
 
         List<SaleItem> items = new ArrayList<>();
+        List<String> consolesWithExtendedWarranty = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
             String itemId = readRequiredText("ID del producto o accesorio " + i + " (videojuego, consola o accesorio): ");
             Product item = resolveSellableItem(itemId);
@@ -476,12 +479,24 @@ public class ConsoleMenu {
             }
             int quantity = readPositiveInt("Cantidad del ítem " + i + ": ");
             items.add(new SaleItem(item, quantity));
+            if (item instanceof Console && readYesNo("La consola \"" + item.getTitle()
+                    + "\" incluye garantía básica gratis (6 meses). ¿Desea agregar garantía extendida (12 meses, "
+                    + "cubre daños accidentales, "
+                    + "costo adicional del 10% del precio, se suma al total)? (s/n): ")) {
+                consolesWithExtendedWarranty.add(item.getProductId());
+            }
         }
 
-        boolean registered = saleService.registerSale(customerId, sellerId, items);
+        boolean registered = saleService.registerSale(customerId, sellerId, items, consolesWithExtendedWarranty);
         if (!registered) {
             System.out.println("No se pudo registrar la venta. Verifique los datos ingresados.");
+            return;
         }
+        List<Sale> allSales = saleService.listAllSales();
+        Sale lastSale = allSales.get(allSales.size() - 1);
+        System.out.println("Venta registrada. Recibo:");
+        System.out.println(formatSaleReceipt(lastSale));
+        System.out.println("ID de la venta (úselo para consultar garantías): " + lastSale.getId());
     }
 
     /**
@@ -541,6 +556,106 @@ public class ConsoleMenu {
      */
     private String formatSaleReceipt(Sale sale) {
         return sale.generateReceipt();
+    }
+
+    // ---------------------------------------------------------------
+    // Warranty management
+    // ---------------------------------------------------------------
+
+    private void showWarrantyMenu() {
+        boolean back = false;
+        while (!back) {
+            System.out.println();
+            System.out.println("----- Gestión de garantías -----");
+            System.out.println("1. Consultar garantía de un producto en una venta");
+            System.out.println("2. Listar todas las garantías registradas");
+            System.out.println("3. Listar garantías vigentes");
+            System.out.println("4. Listar garantías próximas a vencer");
+            System.out.println("0. Volver");
+            System.out.print("Seleccione una opción: ");
+            String option = scanner.nextLine().trim();
+            switch (option) {
+                case "1":
+                    findWarrantyByProduct();
+                    break;
+                case "2":
+                    printWarranties(warrantyService.listAllWarranties(), "No hay garantías registradas.");
+                    break;
+                case "3":
+                    printWarranties(warrantyService.listActiveWarranties(), "No hay garantías vigentes.");
+                    break;
+                case "4":
+                    listWarrantiesExpiringSoon();
+                    break;
+                case "0":
+                    back = true;
+                    break;
+                default:
+                    System.out.println("Opción inválida.");
+            }
+        }
+    }
+
+    private void findWarrantyByProduct() {
+        String saleId = readRequiredText("ID de la venta: ");
+        String productId = readRequiredText("ID del producto: ");
+        Warranty warranty = warrantyService.findWarrantyByProduct(productId, saleId);
+        if (warranty == null) {
+            System.out.println("No se encontró ninguna garantía para ese producto en esa venta.");
+            return;
+        }
+        System.out.println(warranty.generateWarrantyCertificate());
+        System.out.println(warranty.isActive(LocalDate.now())
+                ? "Estado: VIGENTE"
+                : "Estado: VENCIDA");
+    }
+
+    private void listWarrantiesExpiringSoon() {
+        int days = readPositiveInt("Días de anticipación: ");
+        printWarranties(warrantyService.listWarrantiesExpiringSoon(days),
+                "No hay garantías que venzan en los próximos " + days + " días.");
+    }
+
+    /**
+     * Prints a numbered list of warranties in a compact one-line format, or a
+     * fallback message when the list is empty.
+     *
+     * @param warranties   the warranties to print
+     * @param emptyMessage the message to show when there are no warranties
+     */
+    private void printWarranties(List<Warranty> warranties, String emptyMessage) {
+        if (warranties.isEmpty()) {
+            System.out.println(emptyMessage);
+            return;
+        }
+        int index = 1;
+        for (Warranty warranty : warranties) {
+            System.out.println(index + ". [" + warranty.getWarrantyId() + "] "
+                    + warranty.getWarrantyType() + " - " + warranty.getProduct().getTitle()
+                    + " - Venta " + warranty.getSale().getId()
+                    + " - Vigencia: " + warranty.getStartDate() + " a " + warranty.getEndDate());
+            index++;
+        }
+    }
+
+    /**
+     * Asks a yes/no question until the user answers with a valid option.
+     *
+     * @param prompt the question shown to the user
+     * @return true if the user answered yes (s/si), false if no (n/no)
+     */
+    private boolean readYesNo(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String answer = scanner.nextLine().trim().toLowerCase();
+            if (answer.equals("s") || answer.equals("si") || answer.equals("sí")) {
+                return true;
+            }
+            if (answer.equals("n") || answer.equals("no")) {
+                return false;
+            }
+            System.out.println("Respuesta inválida. Escriba 's' para sí o 'n' para no.");
+        }
     }
 
     // ---------------------------------------------------------------

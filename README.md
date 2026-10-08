@@ -44,7 +44,12 @@ mvn clean compile
 mvn exec:java "-Dexec.mainClass=com.gamezone.Main"
 ```
 
-Data files under `data/` are created and updated automatically. The file `data/sellers.csv` is preloaded with 3 sellers, and `data/promotions.csv` is preloaded with 3 promotional campaigns.
+### Using the warranty module
+
+1. In **Gestión de ventas → Registrar venta**, for each console added the system asks whether to add an extended warranty. The basic warranty is always generated automatically. The receipt shows the extended warranty cost and the sale id.
+2. In **Gestión de garantías** you can: look up the warranty of a product in a sale (sale id + product id), list all warranties, list the ones valid today, and list the ones expiring within a number of days you choose.
+
+Data files under `data/` are created and updated automatically. `data/sales.csv` now uses the format `id,date,customerId,sellerId,items,extendedWarrantyCost` (old lines without id are migrated automatically on the next save). The file `data/sellers.csv` is preloaded with 3 sellers, and `data/promotions.csv` is preloaded with 3 promotional campaigns.
 
 ## Repository Structure
 
@@ -72,6 +77,8 @@ GameZoneUnicesar/
     ├── hierarchy-diagram.md
     ├── class-diagram.md
     ├── layers-diagram.md
+    ├── warranty-analysis.md
+    ├── warranty-class-diagram.md
     └── ai-usage/
         ├── leader-ai-log.md
         ├── developer1-ai-log.md
@@ -92,6 +99,8 @@ See [TEAM.md](TEAM.md) for roles, module ownership, and committed activities.
 - [Promotion Class Diagram](docs/promotion-class-diagram.md)
 - [Return Class Diagram (New)](docs/return-class-diagram.md)
 - [Layers Diagram](docs/layers-diagram.md)
+- [Warranty Analysis (New)](docs/warranty-analysis.md)
+- [Warranty Class Diagram (New)](docs/warranty-class-diagram.md)
 
 ## AI Usage Logs
 

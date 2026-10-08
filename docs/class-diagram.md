@@ -160,12 +160,16 @@ classDiagram
     }
 
     class Sale {
+        -String id
         -LocalDate date
         -Customer customer
         -Seller seller
         -List~SaleItem~ items
         -String appliedPromotionName
         -double discountAmount
+        -double extendedWarrantyCost
+        +String getId()
+        +void setId(String id)
         +LocalDate getDate()
         +void setDate(LocalDate date)
         +Customer getCustomer()
@@ -175,6 +179,8 @@ classDiagram
         +List~SaleItem~ getItems()
         +void addItem(SaleItem item)
         +double calculateTotal()
+        +double getExtendedWarrantyCost()
+        +void setExtendedWarrantyCost(double extendedWarrantyCost)
         +double calculateFinalTotal()
         +String generateReceipt()
         +void register()
@@ -225,6 +231,40 @@ classDiagram
         +double calculateSubtotal()
     }
 
+    class Warranty {
+        <<abstract>>
+        -String warrantyId
+        -Product product
+        -Sale sale
+        -LocalDate startDate
+        -LocalDate endDate
+        +String getWarrantyId()
+        +Product getProduct()
+        +Sale getSale()
+        +LocalDate getStartDate()
+        +LocalDate getEndDate()
+        +int getDurationInMonths()*
+        +String getWarrantyType()*
+        +double getAdditionalCost()*
+        +boolean isActive(LocalDate date)
+        +String generateWarrantyCertificate()
+    }
+
+    class BasicWarranty {
+        -int DURATION_IN_MONTHS$ = 6
+        +int getDurationInMonths()
+        +String getWarrantyType()
+        +double getAdditionalCost()
+    }
+
+    class ExtendedWarranty {
+        -int DURATION_IN_MONTHS$ = 12
+        -double COST_PERCENTAGE$ = 0.10
+        +int getDurationInMonths()
+        +String getWarrantyType()
+        +double getAdditionalCost()
+    }
+
     Person <|-- Customer
     Person <|-- Seller
 
@@ -239,6 +279,9 @@ classDiagram
     Promotion <|-- PercentageDiscount
     Promotion <|-- CategoryDiscount
     Promotion <|-- BulkPurchaseDiscount
+
+    Warranty <|-- BasicWarranty
+    Warranty <|-- ExtendedWarranty
 
     Customer "1" --> "0..*" Sale : makes
     Seller "1" --> "0..*" Sale : attends
