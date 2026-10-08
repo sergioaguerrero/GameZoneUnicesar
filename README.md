@@ -4,9 +4,9 @@ GameZone Unicesar is a console-based software solution designed to manage invent
 ## Features
 - **Inventory Management:** Register and manage video games, consoles, and accessories.
 - **Person Management:** Track customers and sellers.
-- **Sales Transactions:** Process sales with automatic stock updates and generated receipts. Every sale now has a unique id (`SALE-0001`, `SALE-0002`, ...), and `registerSale` accepts the list of consoles that must include an extended warranty.
-- **Promotions Management (New):** Apply automatic discounts based on active promotional campaigns (Percentage, Category, and Bulk Purchase discounts) to automatically offer the best price to the customer.
-- **Warranty Management (New):** Every console sold automatically receives a free *basic warranty* (factory defects, 6 months). The seller can optionally add an *extended warranty* to each console at the moment of the sale (factory defects and accidental damage, 12 months, additional cost of 10% of the console price, which is added to the sale total). Warranties are stored in `data/warranties.csv` and can be queried by product and sale, listed, filtered by validity on the current date, and listed when they are about to expire (configurable number of days). Video games and accessories do not receive warranties.
+- **Sales Transactions:** Process sales with automatic stock updates and generated receipts.
+- **Promotions Management:** Apply automatic discounts based on active promotional campaigns (Percentage, Category, and Bulk Purchase discounts) to automatically offer the best price to the customer.
+- **Returns Management (New):** Register product returns enforcing business rules (30-day deadline, sale ownership), restoring stock, generating receipts, and querying the monthly net balance (Sales - Returns).
 
 ## Technologies Used
 * **Java:** JDK 26
@@ -92,10 +92,12 @@ See [TEAM.md](TEAM.md) for roles, module ownership, and committed activities.
 ## Design Documentation
 
 - [Analysis](docs/analysis.md)
-- [Promotion Analysis (New)](docs/promotion-analysis.md)
+- [Promotion Analysis](docs/promotion-analysis.md)
+- [Return Analysis (New)](docs/return-analysis.md)
 - [Hierarchy Diagram](docs/hierarchy-diagram.md)
 - [Class Diagram](docs/class-diagram.md)
-- [Promotion Class Diagram (New)](docs/promotion-class-diagram.md)
+- [Promotion Class Diagram](docs/promotion-class-diagram.md)
+- [Return Class Diagram (New)](docs/return-class-diagram.md)
 - [Layers Diagram](docs/layers-diagram.md)
 - [Warranty Analysis (New)](docs/warranty-analysis.md)
 - [Warranty Class Diagram (New)](docs/warranty-class-diagram.md)
