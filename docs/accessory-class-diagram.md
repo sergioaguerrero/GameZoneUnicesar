@@ -75,4 +75,4 @@ classDiagram
     Accessory "0..*" --> "0..*" Console : compatible with
     AccessoryService ..> AccessoryRepository : uses
     AccessoryService ..> Accessory : manages
-
+```

@@ -75,3 +75,4 @@ classDiagram
     CategoryDiscount ..> Console : checks category via instanceof
     PromotionService ..> PromotionRepository : uses
     PromotionService ..> Promotion : manages
+```

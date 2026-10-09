@@ -299,3 +299,4 @@ classDiagram
     ReturnService ..> ReturnRepository : uses
     ReturnService ..> Return : manages
     ReturnService ..> ProductService : calls restoreStock
+```

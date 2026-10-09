@@ -153,10 +153,3 @@ direction TB
     WarrantyRepository ..> Warranty : saves and rebuilds
     WarrantyRepository ..> SaleService : resolves Sale references on load
 ```
-
-## Notes
-
-- **Inheritance and polymorphism:** `Warranty` holds everything common (id, product, sale, dates, `isActive`, certificate). The three abstract methods are the only things each subclass has to provide, so no duration or cost logic is duplicated.
-- **Integration with the sales flow:** `SaleService.registerSale` creates the sale, applies the promotion, and then calls `applyWarranties`, which uses `instanceof Console` to decide who gets a free `BasicWarranty` and sums the cost of every requested `ExtendedWarranty` into `Sale.extendedWarrantyCost`.
-- **Dependency between `SaleService` and `WarrantyRepository`:** `WarrantyRepository` needs `SaleService` to resolve the sales referenced in `warranties.csv`, and `SaleService` needs `WarrantyService`. To avoid a circular constructor dependency, `WarrantyService` is injected into `SaleService` with a setter in `Main`.
-- **Persistence:** the end date is not stored in `warranties.csv`; it is recalculated by the `Warranty` constructor when the file is loaded. The discriminator column is `BASIC` or `EXTENDED`.
