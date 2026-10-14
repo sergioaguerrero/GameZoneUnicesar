@@ -24,6 +24,7 @@ public class Main {
             SaleRepository saleRepository = new SaleRepository();
             AccessoryRepository accessoryRepository = new AccessoryRepository();
             PromotionRepository promotionRepository = new PromotionRepository(); // Nuevo
+            WarrantyRepository warrantyRepository = new WarrantyRepository();
 
             ProductService productService = new ProductService(productRepository);
             PersonService personService = new PersonService(personRepository,
@@ -32,6 +33,10 @@ public class Main {
                     accessoryRepository.loadAll());
             PromotionService promotionService = new PromotionService(promotionRepository,
                     promotionRepository.loadAll());
+
+            WarrantyService warrantyService = new WarrantyService(warrantyRepository,
+                    saleRepository, productService,
+                    personRepository.loadCustomer(), personRepository.loadSeller());
 
             SaleService saleService = new SaleService(saleRepository, personService,
                     productService, accessoryService, promotionService);

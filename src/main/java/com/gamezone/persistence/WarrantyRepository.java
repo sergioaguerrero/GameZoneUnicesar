@@ -1,8 +1,6 @@
 package com.gamezone.persistence;
 
 import com.gamezone.model.*;
-import com.gamezone.service.ProductService;
-import com.gamezone.service.SaleService;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -16,35 +14,24 @@ import java.util.List;
 
 /**
  * Repository responsible for managing warranty data persistence using a CSV file.
- * Handles saving and mapping operations between Warranty objects and CSV lines.
+ * Warranties are stored and loaded using only the identifiers of their product
+ * and sale; resolving those identifiers into full objects is the responsibility
+ * of the service layer.
  *
- * @version 1.0
+ * @version 1.1
  * @since 2026-09-28
  */
 public class WarrantyRepository {
     private static final String FILE_PATH = "data/warranties.csv";
     private static final String EXTENDED_TYPE = "EXTENDED";
     private static final String BASIC_TYPE = "BASIC";
-    private final ProductService productService;
-    private final SaleService saleService;
-
-    /**
-     * Creates the repository with the services needed to resolve references.
-     *
-     * @param productService service used to resolve products while loading
-     * @param saleService    service used to resolve sales while loading
-     */
-    public WarrantyRepository(ProductService productService, SaleService saleService) {
-        this.productService = productService;
-        this.saleService = saleService;
-    }
 
     /**
      * Loads all warranties from the CSV file.
      *
      * @return the loaded warranties; empty list if the file does not exist
      */
-    public List<Warranty> loadAll() {
+    public List<Warranty> loadAll(List<Sale>sales,List<Product>products) {
         List<Warranty> result = new ArrayList<>();
         File file = new File(FILE_PATH);
         if (!file.exists()) {
@@ -56,10 +43,7 @@ public class WarrantyRepository {
                 if (line.isBlank()) {
                     continue;
                 }
-                Warranty w = fromCsvLine(line);
-                if (w != null) {
-                    result.add(w);
-                }
+                result.add(fromCsvLine(line,sales,products));
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to load warranties from " + FILE_PATH, e);
@@ -85,13 +69,14 @@ public class WarrantyRepository {
     }
 
     /**
-     * Converts a CSV line into a corresponding Warranty object (Extended or Basic).
+     * Converts a CSV line into a corresponding Warranty object (Extended or Basic),
+     * using the product and sale identifiers exactly as stored in the file.
      *
      * @param line the CSV formatted string representing a warranty
      * @return the constructed Warranty object
      * @throws IllegalArgumentException if the warranty type in the CSV is unknown
      */
-    private Warranty fromCsvLine(String line) {
+    private Warranty fromCsvLine(String line, List<Sale>sales,List<Product>products) {
         String[] fields = line.split(",", -1);
         String type = fields[0];
         String id = fields[1];
@@ -102,31 +87,38 @@ public class WarrantyRepository {
         Product product = null;
         Sale sale = null;
 
-        for (Product p : productService.listAllProducts()) {
-            if (p.getProductId().equals(productId)) {
-                product = p;
-            }
-        }
-        for (Sale s : saleService.listAllSales()) {
-            if (s.getId().equals(saleId)) {
-                sale = s;
-            }
-        }
-
-        if (product == null || sale == null) {
-            return null;
-        }
         if (EXTENDED_TYPE.equals(type)) {
+            for (Product p : products){
+                if (p.getProductId().equals(productId)){
+                    product=p;
+                }
+            }
+            for (Sale s : sales){
+                if (s.getId().equals(saleId)){
+                    sale=s;
+                }
+            }
             return new ExtendedWarranty(id, product, sale, startDate);
         }
         if (BASIC_TYPE.equals(type)) {
+            for (Product p : products){
+                if (p.getProductId().equals(productId)){
+                    product=p;
+                }
+            }
+            for (Sale s : sales){
+                if (s.getId().equals(saleId)){
+                    sale=s;
+                }
+            }
             return new BasicWarranty(id, product, sale, startDate);
         }
         throw new IllegalArgumentException("Unknown warranty type in CSV: " + type);
     }
 
     /**
-     * Converts a Warranty object into its corresponding CSV line format.
+     * Converts a Warranty object into its corresponding CSV line format,
+     * writing only the product and sale identifiers.
      *
      * @param warranty the Warranty object to convert
      * @return a comma-separated string representing the warranty data
@@ -137,8 +129,8 @@ public class WarrantyRepository {
             return String.join(",",
                     EXTENDED_TYPE,
                     extended.getWarrantyId(),
-                    String.valueOf(extended.getProduct().getProductId()),
-                    String.valueOf(extended.getSale().getId()),
+                    extended.getProduct().getProductId(),
+                    extended.getSale().getId(),
                     String.valueOf(extended.getStartDate())
             );
         }
@@ -146,11 +138,11 @@ public class WarrantyRepository {
             return String.join(",",
                     BASIC_TYPE,
                     basic.getWarrantyId(),
-                    String.valueOf(basic.getProduct().getProductId()),
-                    String.valueOf(basic.getSale().getId()),
+                    basic.getProduct().getProductId(),
+                    basic.getSale().getId(),
                     String.valueOf(basic.getStartDate())
             );
         }
-        throw new IllegalArgumentException("Unsupported promotion type: " + warranty.getClass());
+        throw new IllegalArgumentException("Unsupported warranty type: " + warranty.getClass());
     }
 }
