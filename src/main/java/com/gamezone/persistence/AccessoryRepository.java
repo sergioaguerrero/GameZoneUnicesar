@@ -19,7 +19,7 @@ import java.util.List;
  * Contains no business rules; those belong to the service layer.
  */
 public class AccessoryRepository {
-    private static final String FILE_PATH = "dat/accesories.csv";
+    private static final String FILE_PATH = "data/accessories.csv";
     private static final String CABLE_TYPE = "CABLE";
     private static final String CONTROLLER_TYPE = "CONTROLLER";
     private static final String MEMORY_TYPE = "MEMORY";
