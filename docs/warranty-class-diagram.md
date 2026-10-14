@@ -45,19 +45,16 @@ direction TB
 
     class WarrantyRepository {
         -String FILE_PATH$ = "data/warranties.csv"
-        -ProductService productService
-        -SaleService saleService
-        +WarrantyRepository(ProductService productService, SaleService saleService)
         +void saveAll(List~Warranty~ warranties)
-        +List~Warranty~ loadAll()
-        -Warranty fromCsvLine(String line)
+        +List~Warranty~ loadAll(List~Sale~ sales, List~Product~ products)
+        -Warranty fromCsvLine(String line, List~Sale~ sales, List~Product~ products)
         -String toCsvLine(Warranty warranty)
     }
 
     class WarrantyService {
         -WarrantyRepository warrantyRepository
         -List~Warranty~ warranties
-        +WarrantyService(WarrantyRepository warrantyRepository)
+        +WarrantyService(WarrantyRepository warrantyRepository, SaleRepository saleRepository, ProductService productService, List~Customer~ customers, List~Seller~ sellers)
         +BasicWarranty assignBasicWarranty(Product product, Sale sale, LocalDate startDate)
         +ExtendedWarranty assignExtendedWarranty(Product product, Sale sale, LocalDate startDate)
         +Warranty findWarrantyByProduct(String productId, String saleId)
@@ -119,6 +116,10 @@ direction TB
         <<abstract>>
     }
 
+    class ProductService {
+        +List~Product~ listAllProducts()
+    }
+
     class ConsoleMenu {
         -WarrantyService warrantyService
         -SaleService saleService
@@ -142,21 +143,25 @@ direction TB
     SaleItem "0..*" --> "1" Product : includes
 
     ConsoleMenu ..> WarrantyService : queries warranties
-    ConsoleMenu ..> SaleService : registers sales
     SaleService "1" --> "1" WarrantyService : assigns warranties
     SaleService ..> SaleRepository : persists sales
     SaleService ..> Console : instanceof check (only consoles get warranties)
     SaleService ..> ExtendedWarranty : reads additional cost
     WarrantyService "1" --> "1" WarrantyRepository : persists and loads
+    WarrantyService ..> SaleRepository : loads sales to resolve references
+    WarrantyService ..> ProductService : lists products to resolve references
     WarrantyService ..> BasicWarranty : creates
     WarrantyService ..> ExtendedWarranty : creates
     WarrantyRepository ..> Warranty : saves and rebuilds
-    WarrantyRepository ..> SaleService : resolves Sale references on load
+    WarrantyRepository ..> Sale : resolves from the list received on load
+    WarrantyRepository ..> Product : resolves from the list received on load
 ```
 
 ## Notes
 
 - **Inheritance and polymorphism:** `Warranty` holds everything common (id, product, sale, dates, `isActive`, certificate). The three abstract methods are the only things each subclass has to provide, so no duration or cost logic is duplicated.
 - **Integration with the sales flow:** `SaleService.registerSale` creates the sale, applies the promotion, and then calls `applyWarranties`, which uses `instanceof Console` to decide who gets a free `BasicWarranty` and sums the cost of every requested `ExtendedWarranty` into `Sale.extendedWarrantyCost`.
-- **Dependency between `SaleService` and `WarrantyRepository`:** `WarrantyRepository` needs `SaleService` to resolve the sales referenced in `warranties.csv`, and `SaleService` needs `WarrantyService`. To avoid a circular constructor dependency, `WarrantyService` is injected into `SaleService` with a setter in `Main`.
+- **Dependencies of the persistence layer:** `WarrantyRepository` no longer depends on any service. It stores only the product and sale identifiers, and when loading it resolves them against the lists of sales and products that its caller passes to `loadAll`.
+- **Where references are resolved:** `WarrantyService` receives `WarrantyRepository`, `SaleRepository` and `ProductService` through its constructor, plus the customers and sellers that `SaleRepository.loadSales` needs. It gathers the products (`ProductService.listAllProducts`) and the sales (`SaleRepository.loadSales`) and hands both lists to `WarrantyRepository.loadAll`.
+- **Dependency between `SaleService` and `WarrantyService`:** `WarrantyService` no longer depends on `SaleService`, so there is no circular dependency between them. `WarrantyService` can therefore be created before `SaleService` in `Main`; `SaleService` keeps receiving it through `setWarrantyService`.
 - **Persistence:** the end date is not stored in `warranties.csv`; it is recalculated by the `Warranty` constructor when the file is loaded. The discriminator column is `BASIC` or `EXTENDED`.
