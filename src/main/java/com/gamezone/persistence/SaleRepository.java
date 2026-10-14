@@ -107,15 +107,23 @@ public class SaleRepository {
                     Sale sale = new Sale(id, date, customer, seller);
                     sale.setExtendedWarrantyCost(warrantyCost);
 
-                    String[] itemsArray = itemsData.split(";");
-                    for (String itemStr : itemsArray) {
-                        String[] itemParts = itemStr.split(":");
-                        String productId = itemParts[0];
-                        int quantity = Integer.parseInt(itemParts[1]);
+                    if (itemsData != null && !itemsData.isBlank()) {
+                        String[] itemsArray = itemsData.split(";");
+                        for (String itemStr : itemsArray) {
+                            if (itemStr.isBlank()) {
+                                continue;
+                            }
+                            String[] itemParts = itemStr.split(":");
+                            if (itemParts.length < 2) {
+                                continue;
+                            }
+                            String productId = itemParts[0];
+                            int quantity = Integer.parseInt(itemParts[1]);
 
-                        Product product = findProductById(allProducts, productId);
-                        if (product != null) {
-                            sale.addItem(new SaleItem(product, quantity));
+                            Product product = findProductById(allProducts, productId);
+                            if (product != null) {
+                                sale.addItem(new SaleItem(product, quantity));
+                            }
                         }
                     }
                     sales.add(sale);

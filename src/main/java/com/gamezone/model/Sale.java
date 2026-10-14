@@ -111,14 +111,34 @@ public class Sale {
      * Calculates the total amount of the sale by summing up the subtotals of
      * all items.
      *
-     * @return the total cost of the sale
+     * @return the total cost of the sale items
      */
     public double calculateTotal() {
         double total = 0.0;
-        for (SaleItem item : items) {
-            total += item.calculateSubtotal();
+        if (items != null) {
+            for (SaleItem item : items) {
+                total += item.calculateSubtotal();
+            }
         }
         return total;
+    }
+
+    /**
+     * Calculates the subtotal of the sale items before discounts and warranties.
+     *
+     * @return the items subtotal amount
+     */
+    public double calculateSubtotal() {
+        return calculateTotal();
+    }
+
+    /**
+     * Returns the subtotal of the sale items.
+     *
+     * @return the items subtotal amount
+     */
+    public double getSubtotal() {
+        return calculateSubtotal();
     }
 
     /**
@@ -129,7 +149,16 @@ public class Sale {
      * @return the final total of the sale
      */
     public double calculateFinalTotal() {
-        return calculateTotal() - discountAmount + extendedWarrantyCost;
+        return calculateSubtotal() - discountAmount + extendedWarrantyCost;
+    }
+
+    /**
+     * Returns the final total amount of the sale.
+     *
+     * @return the final total amount
+     */
+    public double getFinalTotal() {
+        return calculateFinalTotal();
     }
 
     /**
@@ -144,38 +173,39 @@ public class Sale {
     }
 
     /**
-     * Generates a detailed receipt for the sale, including the sale date,
-     * customer, seller, purchased items, subtotal, applied discount, and final
-     * total.
+     * Generates a detailed receipt for the sale. The receipt obligatorily shows
+     * the subtotal, the applied discount (including the promotion name), the
+     * total cost of extended warranties, and the final total to pay.
      *
      * @return a formatted string containing the detailed sale receipt
      */
     public String generateReceipt() {
         StringBuilder sb = new StringBuilder();
         sb.append("Venta ").append(id).append(" [").append(date).append("] ")
-                .append("Cliente: ").append(customer.getName())
-                .append(" | Vendedor: ").append(seller.getName())
+                .append("Cliente: ").append(customer != null ? customer.getName() : "N/A")
+                .append(" | Vendedor: ").append(seller != null ? seller.getName() : "N/A")
                 .append("\n");
 
-        for (SaleItem item : items) {
-            sb.append("     - ").append(item.getProduct().getTitle())
-                    .append(" x").append(item.getQuantity())
-                    .append(" = $").append(String.format("%.2f", item.calculateSubtotal()))
-                    .append("\n");
+        if (items != null) {
+            for (SaleItem item : items) {
+                sb.append("     - ").append(item.getProduct().getTitle())
+                        .append(" x").append(item.getQuantity())
+                        .append(" = $").append(String.format("%.2f", item.calculateSubtotal()))
+                        .append("\n");
+            }
         }
 
-        double subtotal = calculateTotal();
+        double subtotal = calculateSubtotal();
         sb.append("     Subtotal: $").append(String.format("%.2f", subtotal)).append("\n");
 
-        if (discountAmount > 0 && appliedPromotionName != null) {
-            sb.append("     Descuento (").append(appliedPromotionName).append("): -$")
-                    .append(String.format("%.2f", discountAmount)).append("\n");
-        }
+        String promoName = (appliedPromotionName != null && !appliedPromotionName.isBlank())
+                ? appliedPromotionName
+                : "Ninguna";
+        sb.append("     Descuento (").append(promoName).append("): -$")
+                .append(String.format("%.2f", discountAmount)).append("\n");
 
-        if (extendedWarrantyCost > 0) {
-            sb.append("     Garantía extendida: +$")
-                    .append(String.format("%.2f", extendedWarrantyCost)).append("\n");
-        }
+        sb.append("     Costo de garantías extendidas: +$")
+                .append(String.format("%.2f", extendedWarrantyCost)).append("\n");
 
         sb.append("     Total Final: $").append(String.format("%.2f", calculateFinalTotal()));
 

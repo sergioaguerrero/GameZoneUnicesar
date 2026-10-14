@@ -158,7 +158,34 @@ public class WarrantyService {
     /**
      * Persists the current list of warranties using the repository.
      */
-    private void persist() {
+    public void persist() {
         warrantyRepository.saveAll(warranties);
+    }
+
+    /**
+     * Gets the warranty repository handling persistence.
+     *
+     * @return the warranty repository
+     */
+    public WarrantyRepository getWarrantyRepository() {
+        return warrantyRepository;
+    }
+
+    /**
+     * Gets the current in-memory list of warranties.
+     *
+     * @return the list of warranties
+     */
+    public List<Warranty> getWarranties() {
+        return warranties;
+    }
+
+    /**
+     * Sets the in-memory list of warranties.
+     *
+     * @param warranties the new list of warranties
+     */
+    public void setWarranties(List<Warranty> warranties) {
+        this.warranties = warranties;
     }
 }
