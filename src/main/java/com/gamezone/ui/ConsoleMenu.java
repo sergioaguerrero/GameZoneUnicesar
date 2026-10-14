@@ -782,7 +782,7 @@ public class ConsoleMenu {
         java.time.LocalDate startDate = readRequiredDate("Fecha inicio (AAAA-MM-DD): ");
         java.time.LocalDate endDate = readRequiredDate("Fecha fin (AAAA-MM-DD): ");
         double percentage = readPositiveDouble("Porcentaje de descuento (0-100): ");
-        String category = readRequiredText("Categoría (VIDEOGAME o CONSOLE): ").toUpperCase();
+        String category = readRequiredText("Categoría (VIDEOGAME, CONSOLE o ACCESSORY): ").toUpperCase();
         try {
             promotionService.registerCategory(id, name, startDate, endDate, percentage, category);
             System.out.println("Promoción registrada exitosamente.");

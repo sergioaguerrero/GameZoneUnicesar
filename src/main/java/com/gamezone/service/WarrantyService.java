@@ -1,6 +1,7 @@
 package com.gamezone.service;
 
 import com.gamezone.model.*;
+import com.gamezone.persistence.SaleRepository;
 import com.gamezone.persistence.WarrantyRepository;
 
 import java.time.LocalDate;
@@ -12,22 +13,35 @@ import java.util.UUID;
 /**
  * Contains the business rules related to warranty management, including
  * basic and extended warranties creation, filtering, and retrieval.
+ * When loading, it resolves each warranty's product and sale references by
+ * supplying the repository with the current lists of products and sales.
  *
- * @version 1.2
+ * @version 1.3
  * @since 2026-09-28
  */
 public class WarrantyService {
     private final WarrantyRepository warrantyRepository;
-    private List<Warranty> warranties;
+    private final List<Warranty> warranties;
 
     /**
-     * Initializes the WarrantyService with the required repository and initial warranties list.
+     * Initializes the WarrantyService, loading the stored warranties and
+     * resolving their product and sale references from the given sources.
      *
      * @param warrantyRepository the repository handling warranty persistence
+     * @param saleRepository     the repository providing the sales used to resolve sale ids
+     * @param productService     the service providing the products used to resolve product ids
+     * @param customers          the customers needed to rebuild the stored sales
+     * @param sellers            the sellers needed to rebuild the stored sales
      */
-    public WarrantyService(WarrantyRepository warrantyRepository) {
+    public WarrantyService(WarrantyRepository warrantyRepository,
+                           SaleRepository saleRepository,
+                           ProductService productService,
+                           List<Customer> customers,
+                           List<Seller> sellers) {
         this.warrantyRepository = warrantyRepository;
-        this.warranties = warrantyRepository.loadAll();
+        List<Product> products = productService.listAllProducts();
+        List<Sale> sales = saleRepository.loadSales(customers, sellers, products);
+        this.warranties = warrantyRepository.loadAll(sales, products);
     }
 
     /**
