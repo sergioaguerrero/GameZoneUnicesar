@@ -1,6 +1,7 @@
 package com.gamezone.persistence;
 
 import com.gamezone.model.*;
+import com.gamezone.service.AccessoryService;
 import com.gamezone.service.SaleService;
 
 import java.io.BufferedWriter;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Handles file-based persistence for Return objects using a CSV format[cite: 12].
@@ -17,14 +19,19 @@ public class ReturnRepository {
     private static final String FILE_PATH = "data/returns.csv";
 
     private final SaleService saleService;
+    private final AccessoryService accessoryService;
 
     /**
-     * Initializes the ReturnRepository with the required sale service to resolve references[cite: 12].
+     * Initializes the ReturnRepository with the services required to resolve
+     * sale and accessory references while loading[cite: 12].
      *
      * @param saleService the service handling and listing sales
+     * @param accessoryService the service managing accessories, used to resolve
+     * accessory references on load
      */
-    public ReturnRepository(SaleService saleService) {
+    public ReturnRepository(SaleService saleService, AccessoryService accessoryService) {
         this.saleService = saleService;
+        this.accessoryService = accessoryService;
     }
 
     /**
@@ -60,7 +67,9 @@ public class ReturnRepository {
     }
 
     /**
-     * Loads a return from a CSV line, resolves the original sale, and reconstructs the object[cite: 12].
+     * Loads a return from a CSV line, resolves the original sale, and reconstructs the object.
+     * Accessories found in the sale are resolved against {@link AccessoryService}, so the
+     * return references the accessory instances managed by the inventory[cite: 12].
      *
      * @param line the text line stored in the CSV file
      * @return a reconstructed Return instance, or null if the original sale is not found
@@ -80,7 +89,7 @@ public class ReturnRepository {
             if (saleId.equals(sale.getId())) {
                 targetSale = sale;
                 for (SaleItem items : sale.getItems()){
-                    products.add(items.getProduct());
+                    products.add(resolveProduct(items.getProduct()));
                 }
                 break;
             }
@@ -91,6 +100,24 @@ public class ReturnRepository {
         }
 
         return null;
+    }
+
+    /**
+     * Resolves a product found in a sale item. Accessories are replaced by the
+     * instance managed by {@link AccessoryService}; any other product, or an
+     * accessory that is no longer registered, is returned unchanged.
+     *
+     * @param product the product taken from a sale item
+     * @return the resolved product
+     */
+    private Product resolveProduct(Product product) {
+        if (product instanceof Accessory) {
+            Optional<Accessory> managed = accessoryService.findById(product.getProductId());
+            if (managed.isPresent()) {
+                return managed.get();
+            }
+        }
+        return product;
     }
 
     /**
