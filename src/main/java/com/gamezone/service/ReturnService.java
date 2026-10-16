@@ -1,5 +1,6 @@
 package com.gamezone.service;
 
+import com.gamezone.model.Accessory;
 import com.gamezone.model.Product;
 import com.gamezone.model.Return;
 import com.gamezone.model.Sale;
@@ -19,6 +20,7 @@ public class ReturnService {
     private final ReturnRepository returnRepository;
     private final SaleService saleService;
     private final ProductService productService;
+    private final AccessoryService accessoryService;
     private List<Return> returns;
 
     /**
@@ -28,17 +30,21 @@ public class ReturnService {
      * @param saleService the service handling sales
      * @param productService the service handling products and inventory
      * @param returns the initial in-memory list of returns
+     * @param accessoryService the service handling accessories and their inventory
      */
-    public ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService, List<Return> returns) {
+    public ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService, List<Return> returns, AccessoryService accessoryService) {
         this.returnRepository = returnRepository;
         this.saleService = saleService;
         this.productService = productService;
         this.returns = returns != null ? returns : new ArrayList<>();
+        this.accessoryService = accessoryService;
     }
 
     /**
      * Registers a new product return by validating the sale existence, the 30-day return window,
      * verifying that products belong to the sale, restoring inventory stock, and calculating the refund amount[cite: 23].
+     * Stock is restored through {@link AccessoryService} for accessories and through
+     * {@link ProductService} for every other product type.
      *
      * @param saleId the unique identifier of the original sale
      * @param productIds the list of product IDs being returned
@@ -92,7 +98,7 @@ public class ReturnService {
 
             productsToReturn.add(matchedProduct);
 
-            productService.restoreStock(matchedProduct.getProductId(), quantityToRestore);
+            restoreStockFor(matchedProduct, quantityToRestore);
         }
 
         String returnId = "RET-" + UUID.randomUUID().toString().substring(0, 8);
@@ -102,6 +108,22 @@ public class ReturnService {
         System.out.println("Devolución registrada exitosamente.");
         returnRepository.saveAll(returns);
         return newReturn;
+    }
+
+    /**
+     * Restores stock for a returned item, delegating to the service that manages
+     * its inventory: {@link AccessoryService} for accessories and
+     * {@link ProductService} for any other product.
+     *
+     * @param product the returned product or accessory
+     * @param quantity the quantity to add back to stock
+     */
+    private void restoreStockFor(Product product, int quantity) {
+        if (product instanceof Accessory) {
+            accessoryService.restoreStock(product.getProductId(), quantity);
+        } else {
+            productService.restoreStock(product.getProductId(), quantity);
+        }
     }
 
     /**

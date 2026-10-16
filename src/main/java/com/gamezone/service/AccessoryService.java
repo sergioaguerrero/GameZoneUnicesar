@@ -51,8 +51,6 @@ public class AccessoryService {
         return cable;
     }
 
-
-
     /**
      * Registers a new controller accessory and persists the updated list.
      *
@@ -66,7 +64,7 @@ public class AccessoryService {
      * already exists
      */
     public Controller registerController(String productId, String title, double price,
-                               int stockQuantity,String connectionType) {
+                                         int stockQuantity,String connectionType) {
         validateNewAccessoryId(productId);
         Controller controller = new Controller(productId, title, price, stockQuantity,
                 connectionType);
@@ -184,6 +182,22 @@ public class AccessoryService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Accessory not found: " + accessoryId));
         a.decreaseStock(quantity);
+        persist();
+    }
+
+    /**
+     * Restores stock to the given accessory (for example after a return) and
+     * persists the change.
+     *
+     * @param accessoryId the id of the accessory whose stock is restored
+     * @param quantity the quantity to add back to current stock
+     * @throws IllegalArgumentException if no accessory with the given id exists
+     */
+    public void restoreStock(String accessoryId, int quantity) {
+        Accessory a = findById(accessoryId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Accessory not found: " + accessoryId));
+        a.increaseStock(quantity);
         persist();
     }
 }
