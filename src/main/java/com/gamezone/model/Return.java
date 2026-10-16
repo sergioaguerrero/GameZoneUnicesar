@@ -122,18 +122,36 @@ public class Return {
     }
 
     /**
-     * Calculates the refund amount as the sum of the prices of the returned
-     * products, and stores it in this return.
+     * Calculates the refund amount as the sum of the proportional value of each
+     * returned product.
+     *
+     * Each product's refund is its list price reduced by the same discount
+     * ratio that applied to the whole original sale: price × (1 − discount /
+     * subtotal). This way, if the original sale had a promotion applied, the
+     * customer is not refunded more than what they actually paid.
      *
      * @return the calculated refund amount
      */
     public double calculateRefundAmount() {
         double total = 0.0;
         for (Product product : returnedProducts) {
-            total += product.getPrice();
+            total += calculateItemRefund(product);
         }
         this.refundAmount = total;
         return this.refundAmount;
+    }
+
+    /**
+     * Calculates the proportional refund for a single returned product,
+     * applying the same discount ratio that applied to the original sale.
+     *
+     * @param product the product to calculate the refund for
+     * @return the proportional refund amount for the product
+     */
+    private double calculateItemRefund(Product product) {
+        double subtotal = originalSale.getSubtotal();
+        double discountRatio = subtotal > 0 ? originalSale.getDiscountAmount() / subtotal : 0.0;
+        return product.getPrice() * (1 - discountRatio);
     }
 
     /**
