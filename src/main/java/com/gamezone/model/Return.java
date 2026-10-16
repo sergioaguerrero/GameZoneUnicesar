@@ -156,8 +156,9 @@ public class Return {
 
     /**
      * Builds a formatted receipt, in Spanish, with the detail of this return:
-     * identifier, date, reference to the original sale, returned products with
-     * their prices, reason and refunded amount.
+     * identifier, date, reference to the original sale, and for each returned
+     * product its list price, proportional discount and refunded amount,
+     * followed by the reason and the total refunded amount.
      *
      * @return the return receipt
      */
@@ -169,7 +170,13 @@ public class Return {
         receipt.append("Venta original: ").append(originalSale.getDate()).append("\n");
         receipt.append("Productos devueltos:\n");
         for (Product product : returnedProducts) {
-            receipt.append(String.format("  - %s | $%.2f%n", product.getTitle(), product.getPrice()));
+            double listPrice = product.getPrice();
+            double itemRefund = calculateItemRefund(product);
+            double proportionalDiscount = listPrice - itemRefund;
+            receipt.append(String.format("  - %s%n", product.getTitle()));
+            receipt.append(String.format("      Precio de lista: $%.2f%n", listPrice));
+            receipt.append(String.format("      Descuento proporcional: -$%.2f%n", proportionalDiscount));
+            receipt.append(String.format("      Reembolso: $%.2f%n", itemRefund));
         }
         receipt.append("Motivo: ").append(reason).append("\n");
         receipt.append(String.format("Monto reembolsado: $%.2f%n", refundAmount));
