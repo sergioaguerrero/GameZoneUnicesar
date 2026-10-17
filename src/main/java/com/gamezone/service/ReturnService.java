@@ -182,7 +182,7 @@ public class ReturnService {
     public List<Return> viewReturnsByCustomer(String customerId){
         List<Return> returnByCustomer = new ArrayList<>();
         for (Return r : returns){
-            if (r.getOriginalSale().getCustomer().equals(customerId)){
+            if (r.getOriginalSale().getCustomer().getId().equals(customerId)){
                 returnByCustomer.add(r);
             }
         }
