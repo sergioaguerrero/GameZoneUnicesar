@@ -41,7 +41,7 @@ public class ConsoleMenu {
     private final WarrantyService warrantyService;
 
     /**
-     * Creates a new console menu backed by the given services including WarrantyService.
+     * Creates a new console menu backed by the given services.
      *
      * @param productService   the service used for product operations
      * @param personService    the service used for customer and seller operations
@@ -52,7 +52,7 @@ public class ConsoleMenu {
      * @param warrantyService  the service used for warranty operations
      */
     public ConsoleMenu(ProductService productService, PersonService personService,
-                       SaleService saleService, AccessoryService accessoryService, 
+                       SaleService saleService, AccessoryService accessoryService,
                        PromotionService promotionService, ReturnService returnService,
                        WarrantyService warrantyService) {
         this.productService = productService;
@@ -63,54 +63,6 @@ public class ConsoleMenu {
         this.promotionService = promotionService;
         this.returnService = returnService;
         this.warrantyService = warrantyService;
-    }
-
-    /**
-     * Creates a new console menu backed by the given services without WarrantyService.
-     *
-     * @param productService   the service used for product operations
-     * @param personService    the service used for customer and seller operations
-     * @param saleService      the service used for sale operations
-     * @param accessoryService the service used for accessory operations
-     * @param promotionService the service used for promotion operations
-     * @param returnService    the service used for return operations
-     */
-    public ConsoleMenu(ProductService productService, PersonService personService,
-                       SaleService saleService, AccessoryService accessoryService, 
-                       PromotionService promotionService, ReturnService returnService) {
-        this(productService, personService, saleService, accessoryService, promotionService, returnService, null);
-    }
-
-    public ProductService getProductService() {
-        return productService;
-    }
-
-    public PersonService getPersonService() {
-        return personService;
-    }
-
-    public SaleService getSaleService() {
-        return saleService;
-    }
-
-    public AccessoryService getAccessoryService() {
-        return accessoryService;
-    }
-
-    public Scanner getScanner() {
-        return scanner;
-    }
-
-    public PromotionService getPromotionService() {
-        return promotionService;
-    }
-
-    public ReturnService getReturnService() {
-        return returnService;
-    }
-
-    public WarrantyService getWarrantyService() {
-        return warrantyService;
     }
 
     /**
@@ -127,7 +79,6 @@ public class ConsoleMenu {
             System.out.println("4. Gestión de accesorios");
             System.out.println("5. Gestión de promociones");
             System.out.println("6. Gestión de devoluciones");
-            System.out.println("7. Gestión de garantías");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
             String option = scanner.nextLine().trim();
@@ -149,9 +100,6 @@ public class ConsoleMenu {
                     break;
                 case "6":
                     showReturnMenu();
-                    break;
-                case "7":
-                    showWarrantyMenu();
                     break;
                 case "0":
                     running = false;
@@ -526,7 +474,7 @@ public class ConsoleMenu {
         List<SaleItem> items = new ArrayList<>();
         List<String> consolesWithExtendedWarranty = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
-            String itemId = readRequiredText("ID del producto (videojuego/consola) o accesorio " + i + ": ");
+            String itemId = readRequiredText("ID del producto o accesorio " + i + " (videojuego, consola o accesorio): ");
             Product item = resolveSellableItem(itemId);
             if (item == null) {
                 System.out.println("No se encontró ningún producto o accesorio con el ID " + itemId
@@ -535,13 +483,11 @@ public class ConsoleMenu {
             }
             int quantity = readPositiveInt("Cantidad del ítem " + i + ": ");
             items.add(new SaleItem(item, quantity));
-            if (item instanceof Console) {
-                boolean addExtended = readYesNo("La consola \"" + item.getTitle()
-                        + "\" incluye garantía básica gratis (6 meses). ¿Desea adquirir la garantía extendida (12 meses adicionales, "
-                        + "cubre daños accidentales, costo adicional del 10% del precio)? (s/n): ");
-                if (addExtended) {
-                    consolesWithExtendedWarranty.add(item.getProductId());
-                }
+            if (item instanceof Console && readYesNo("La consola \"" + item.getTitle()
+                    + "\" incluye garantía básica gratis (6 meses). ¿Desea agregar garantía extendida (12 meses, "
+                    + "cubre daños accidentales, "
+                    + "costo adicional del 10% del precio, se suma al total)? (s/n): ")) {
+                consolesWithExtendedWarranty.add(item.getProductId());
             }
         }
 
@@ -552,7 +498,7 @@ public class ConsoleMenu {
         }
         List<Sale> allSales = saleService.listAllSales();
         Sale lastSale = allSales.get(allSales.size() - 1);
-        System.out.println("Venta registrada exitosamente. Recibo:");
+        System.out.println("Venta registrada. Recibo:");
         System.out.println(formatSaleReceipt(lastSale));
         System.out.println("ID de la venta (úselo para consultar garantías): " + lastSale.getId());
     }
@@ -621,10 +567,6 @@ public class ConsoleMenu {
     // ---------------------------------------------------------------
 
     private void showWarrantyMenu() {
-        if (warrantyService == null) {
-            System.out.println("El servicio de garantías no se encuentra configurado.");
-            return;
-        }
         boolean back = false;
         while (!back) {
             System.out.println();
@@ -782,7 +724,7 @@ public class ConsoleMenu {
         java.time.LocalDate startDate = readRequiredDate("Fecha inicio (AAAA-MM-DD): ");
         java.time.LocalDate endDate = readRequiredDate("Fecha fin (AAAA-MM-DD): ");
         double percentage = readPositiveDouble("Porcentaje de descuento (0-100): ");
-        String category = readRequiredText("Categoría (VIDEOGAME, CONSOLE o ACCESSORY): ").toUpperCase();
+        String category = readRequiredText("Categoría (VIDEOGAME o CONSOLE): ").toUpperCase();
         try {
             promotionService.registerCategory(id, name, startDate, endDate, percentage, category);
             System.out.println("Promoción registrada exitosamente.");
@@ -1056,7 +998,7 @@ public class ConsoleMenu {
             productIds.add(productId);
         }
         String reason = readRequiredText("Motivo de la devolución: ");
-        
+
         try {
             com.gamezone.model.Return ret = returnService.registerReturn(saleId, productIds, reason);
             System.out.println("Devolución registrada exitosamente.");
@@ -1090,8 +1032,15 @@ public class ConsoleMenu {
             return;
         }
         int year = readPositiveInt("Año (ej. 2026): ");
+        double balanceSale = returnService.calculateMonthlySales(month, year);
+        double balanceReturn = returnService.calculateMonthlyReturns(month, year);
         double balance = returnService.generateMonthlyBalance(month, year);
-        System.out.println("El balance mensual neto (Ventas - Devoluciones) para " + month + "/" + year + " es: $" + String.format("%.2f", balance));
+        System.out.println("El total mensual en ventas para " +
+                month + "/" + year + " es: $" + String.format("%.2f", balanceSale));
+        System.out.println("El total mensual en devoluciones para " +
+                month + "/" + year + " es: $" + String.format("%.2f", balanceReturn));
+        System.out.println("El balance mensual neto (Ventas - Devoluciones) para " +
+                month + "/" + year + " es: $" + String.format("%.2f", balance));
     }
 
     private void printReturns(List<com.gamezone.model.Return> returns, String emptyMessage) {
