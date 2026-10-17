@@ -18,11 +18,11 @@ import java.util.List;
  */
 public class Return {
 
-    private String returnId;
-    private LocalDate returnDate;
-    private Sale originalSale;
-    private List<Product> returnedProducts;
-    private String reason;
+    private final String returnId;
+    private final LocalDate returnDate;
+    private final Sale originalSale;
+    private final List<Product> returnedProducts;
+    private final String reason;
     private double refundAmount;
 
     /**
@@ -38,7 +38,7 @@ public class Return {
      * returned products is null or empty
      */
     public Return(String returnId, LocalDate returnDate, Sale originalSale,
-            List<Product> returnedProducts, String reason) {
+                  List<Product> returnedProducts, String reason) {
         if (returnId == null || returnId.isBlank()) {
             throw new IllegalArgumentException("Return id must not be null or blank");
         }
@@ -112,7 +112,6 @@ public class Return {
 
     /**
      * Returns the amount refunded to the customer.
-     *
      * This value is zero until {@link #calculateRefundAmount()} is invoked.
      *
      * @return the refund amount
@@ -124,7 +123,6 @@ public class Return {
     /**
      * Calculates the refund amount as the sum of the proportional value of each
      * returned product.
-     *
      * Each product's refund is its list price reduced by the same discount
      * ratio that applied to the whole original sale: price × (1 − discount /
      * subtotal). This way, if the original sale had a promotion applied, the
@@ -138,6 +136,24 @@ public class Return {
             total += calculateItemRefund(product);
         }
         this.refundAmount = total;
+        return this.refundAmount;
+    }
+
+    /**
+     * Calculates the refund amount as the sum of the proportional value of each
+     * returned product plus the refundable cost of the cancelled warranties.
+     *
+     * @param warrantyRefund the refundable cost of the warranties cancelled with
+     * this return, zero if there is none
+     * @return the calculated refund amount
+     * @throws IllegalArgumentException if the warranty refund is negative
+     */
+    public double calculateRefundAmount(double warrantyRefund) {
+        if (warrantyRefund < 0) {
+            throw new IllegalArgumentException("Warranty refund must not be negative");
+        }
+        calculateRefundAmount();
+        this.refundAmount += warrantyRefund;
         return this.refundAmount;
     }
 
