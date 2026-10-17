@@ -42,7 +42,7 @@ public class Main {
                     productService, accessoryService, promotionService);
 
             ReturnRepository returnRepository = new ReturnRepository(saleService,accessoryService/*,accesoryService*/);
-            ReturnService returnService = new ReturnService(returnRepository, saleService, productService, returnRepository.loadAll(),accessoryService/*accessoryService*/);
+            ReturnService returnService = new ReturnService(returnRepository, saleService, productService, returnRepository.loadAll(),accessoryService, warrantyService);
 
             ConsoleMenu consoleMenu = new ConsoleMenu(productService, personService,
                     saleService, accessoryService, promotionService, returnService,warrantyService);
