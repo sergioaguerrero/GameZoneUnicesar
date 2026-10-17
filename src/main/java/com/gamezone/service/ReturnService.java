@@ -21,6 +21,7 @@ public class ReturnService {
     private final SaleService saleService;
     private final ProductService productService;
     private final AccessoryService accessoryService;
+    private final WarrantyService warrantyService;
     private final List<Return> returns;
 
     /**
@@ -31,13 +32,17 @@ public class ReturnService {
      * @param productService the service handling products and inventory
      * @param returns the initial in-memory list of returns
      * @param accessoryService the service handling accessories and their inventory
+     * @param warrantyService the service managing warranties, used to cancel the
+     * warranties of returned products
      */
-    public ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService, List<Return> returns, AccessoryService accessoryService) {
+    public ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService, List<Return> returns, AccessoryService accessoryService,
+                         WarrantyService warrantyService) {
         this.returnRepository = returnRepository;
         this.saleService = saleService;
         this.productService = productService;
         this.returns = returns != null ? returns : new ArrayList<>();
         this.accessoryService = accessoryService;
+        this.warrantyService = warrantyService;
     }
 
     /**
@@ -83,6 +88,8 @@ public class ReturnService {
      * verifying that products belong to the sale, restoring inventory stock, and calculating the refund amount[cite: 23].
      * Stock is restored through {@link AccessoryService} for accessories and through
      * {@link ProductService} for every other product type.
+     * Cancels the warranties of the returned products and adds their refundable
+     * cost to the refund amount.
      *
      * @param saleId the unique identifier of the original sale
      * @param productIds the list of product IDs being returned
@@ -118,6 +125,7 @@ public class ReturnService {
         }
 
         List<Product> productsToReturn = new ArrayList<>();
+        double warrantyRefund = 0.0;
         for (String id : productIds) {
             Product matchedProduct = null;
             int quantityToRestore = 0;
@@ -135,13 +143,14 @@ public class ReturnService {
             }
 
             productsToReturn.add(matchedProduct);
-
             restoreStockFor(matchedProduct, quantityToRestore);
+            warrantyRefund += warrantyService.cancelWarranties(matchedProduct.getProductId(), saleId);
+
         }
 
         String returnId = "RET-" + UUID.randomUUID().toString().substring(0, 8);
         Return newReturn = new Return(returnId, LocalDate.now(), originalSale, productsToReturn, reason);
-        newReturn.calculateRefundAmount();
+        newReturn.calculateRefundAmount(warrantyRefund);
         returns.add(newReturn);
         System.out.println("Devolución registrada exitosamente.");
         returnRepository.saveAll(returns);

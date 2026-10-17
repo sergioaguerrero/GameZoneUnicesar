@@ -21,7 +21,7 @@ import java.util.UUID;
  */
 public class WarrantyService {
     private final WarrantyRepository warrantyRepository;
-    private final List<Warranty> warranties;
+    private List<Warranty> warranties;
 
     /**
      * Initializes the WarrantyService, loading the stored warranties and
@@ -133,6 +133,39 @@ public class WarrantyService {
             }
         }
         return activeWarranties;
+    }
+    /**
+     * Cancels every warranty covering the given product in the given sale and
+     * persists the change. A basic warranty is free, so it adds nothing to the
+     * refundable amount; an extended warranty adds its additional cost.
+     *
+     * @param productId the ID of the product whose warranties are cancelled
+     * @param saleId    the ID of the sale in which the warranties were granted
+     * @return the refundable cost of the cancelled warranties, or 0 if none
+     * were found or only basic warranties were cancelled
+     */
+    public double cancelWarranties(String productId, String saleId) {
+        double refundableCost = 0.0;
+        List<Warranty> toCancel = new ArrayList<>();
+
+        for (Warranty warranty : warranties) {
+            boolean matchesProduct = warranty.getProduct() != null &&
+                    warranty.getProduct().getProductId().equals(productId);
+            boolean matchesSale = warranty.getSale() != null &&
+                    warranty.getSale().getId().equals(saleId);
+            if (matchesProduct && matchesSale) {
+                if (warranty instanceof ExtendedWarranty) {
+                    refundableCost += warranty.getAdditionalCost();
+                }
+                toCancel.add(warranty);
+            }
+        }
+
+        if (!toCancel.isEmpty()) {
+            warranties.removeAll(toCancel);
+            persist();
+        }
+        return refundableCost;
     }
 
     /**
