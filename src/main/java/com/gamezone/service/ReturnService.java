@@ -21,7 +21,7 @@ public class ReturnService {
     private final SaleService saleService;
     private final ProductService productService;
     private final AccessoryService accessoryService;
-    private List<Return> returns;
+    private final List<Return> returns;
 
     /**
      * Initializes the ReturnService with the required repository, services, and initial returns list[cite: 23].
@@ -38,6 +38,44 @@ public class ReturnService {
         this.productService = productService;
         this.returns = returns != null ? returns : new ArrayList<>();
         this.accessoryService = accessoryService;
+    }
+
+    /**
+     * Calculates the total sales for a specific month and year.
+     *
+     * @param month the month to filter sales by (1-12)
+     * @param year  the year to filter sales by
+     * @return      the sum of all sale totals for the specified month and year
+     */
+    public double calculateMonthlySales(int month, int year){
+        double totalSales=0.0;
+        for (Sale sale : saleService.listAllSales()) {
+            LocalDate saleDate = sale.getDate();
+            if (saleDate != null && saleDate.getMonthValue() == month && saleDate.getYear() == year) {
+                totalSales += sale.calculateFinalTotal();
+            }
+        }
+        return totalSales;
+    }
+
+    /**
+     * Calculates the total returns for a specific month and year.
+     *
+     * @param month the month to filter returns by (1-12)
+     * @param year  the year to filter returns by
+     * @return      the sum of all refund amounts for the specified month and year
+     */
+    public double calculateMonthlyReturns(int month,int year){
+        double totalReturns = 0.0;
+
+
+        for (Return ret : returns) {
+            LocalDate returnDate = ret.getReturnDate();
+            if (returnDate != null && returnDate.getMonthValue() == month && returnDate.getYear() == year) {
+                totalReturns += ret.getRefundAmount();
+            }
+        }
+        return totalReturns;
     }
 
     /**
@@ -168,29 +206,14 @@ public class ReturnService {
     }
 
     /**
-     * Calculates the net financial balance for a specific month and year by subtracting
-     * total refunds from total sales in that period[cite: 23].
+     * Generates the net monthly balance for a specific month and year by
+     * subtracting total returns from total sales.
      *
-     * @param month the month to evaluate (1-12)
-     * @param year the year to evaluate
-     * @return the net balance (total sales minus total refunds)
+     * @param month the month for which to calculate the balance (1-12)
+     * @param year  the year for which to calculate the balance
+     * @return      the monthly balance (sales - returns)
      */
     public double generateMonthlyBalance(int month, int year) {
-        double totalSales = 0.0;
-        double totalReturns = 0.0;
-
-        for (Sale sale : saleService.listAllSales()) {
-            LocalDate saleDate = sale.getDate();
-            if (saleDate != null && saleDate.getMonthValue() == month && saleDate.getYear() == year) {
-                totalSales += sale.calculateTotal();
-            }
-        }
-        for (Return ret : returns) {
-            LocalDate returnDate = ret.getReturnDate();
-            if (returnDate != null && returnDate.getMonthValue() == month && returnDate.getYear() == year) {
-                totalReturns += ret.getRefundAmount();
-            }
-        }
-        return totalSales - totalReturns;
+        return calculateMonthlySales(month,year) - calculateMonthlyReturns(month,year);
     }
 }
