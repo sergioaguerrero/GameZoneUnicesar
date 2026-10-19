@@ -78,11 +78,98 @@ classDiagram
         +String getFullDescription()
     }
 
+    class Accessory {
+        <<abstract>>
+        -List~Console~ compatibleConsoles
+        +List~Console~ getCompatibleConsoles()
+        +void setCompatibleConsoles(List~Console~ compatibleConsoles)
+        +void addCompatibleConsole(Console console)
+        +boolean removeCompatibleConsole(Console console)
+        +boolean isCompatibleWith(Console console)
+        +String getAccessoryType()*
+        +String getFullDescription()*
+    }
+
+    class Controller {
+        -String connectionType
+        +String getConnectionType()
+        +void setConnectionType(String connectionType)
+        +String getAccessoryType()
+        +String getFullDescription()
+    }
+
+    class Cable {
+        -double length
+        -String connectorType
+        +double getLength()
+        +void setLength(double length)
+        +String getConnectorType()
+        +void setConnectorType(String connectorType)
+        +String getAccessoryType()
+        +String getFullDescription()
+    }
+
+    class Memory {
+        -int capacityGB
+        -String memoryType
+        +int getCapacityGB()
+        +void setCapacityGB(int capacityGB)
+        +String getMemoryType()
+        +void setMemoryType(String memoryType)
+        +String getAccessoryType()
+        +String getFullDescription()
+    }
+
+    class Promotion {
+        <<abstract>>
+        -String id
+        -String name
+        -LocalDate startDate
+        -LocalDate endDate
+        +String getId()
+        +String getName()
+        +LocalDate getStartDate()
+        +LocalDate getEndDate()
+        +boolean isActive(LocalDate date)
+        +double calculateDiscount(Sale sale)*
+    }
+
+    class PercentageDiscount {
+        -double percentage
+        +double getPercentage()
+        +void setPercentage(double percentage)
+        +double calculateDiscount(Sale sale)
+    }
+
+    class CategoryDiscount {
+        +String CATEGORY_VIDEOGAME$
+        +String CATEGORY_CONSOLE$
+        -double percentage
+        -String targetCategory
+        +double getPercentage()
+        +String getTargetCategory()
+        +double calculateDiscount(Sale sale)
+    }
+
+    class BulkPurchaseDiscount {
+        -int minimumQuantity
+        -double percentage
+        +int getMinimumQuantity()
+        +double getPercentage()
+        +double calculateDiscount(Sale sale)
+    }
+
     class Sale {
+        -String id
         -LocalDate date
         -Customer customer
         -Seller seller
         -List~SaleItem~ items
+        -String appliedPromotionName
+        -double discountAmount
+        -double extendedWarrantyCost
+        +String getId()
+        +void setId(String id)
         +LocalDate getDate()
         +void setDate(LocalDate date)
         +Customer getCustomer()
@@ -92,7 +179,46 @@ classDiagram
         +List~SaleItem~ getItems()
         +void addItem(SaleItem item)
         +double calculateTotal()
+        +double getExtendedWarrantyCost()
+        +void setExtendedWarrantyCost(double extendedWarrantyCost)
+        +double calculateFinalTotal()
+        +String generateReceipt()
         +void register()
+        +boolean canBeReturned()
+    }
+
+    class Return {
+        -String returnId
+        -LocalDate returnDate
+        -Sale originalSale
+        -List~Product~ returnedProducts
+        -String reason
+        -double refundAmount
+        +String getReturnId()
+        +LocalDate getReturnDate()
+        +Sale getOriginalSale()
+        +List~Product~ getReturnedProducts()
+        +String getReason()
+        +double getRefundAmount()
+        +double calculateRefundAmount()
+        +String generateReturnReceipt()
+    }
+
+    class ReturnRepository {
+        +void saveAll(List~Return~ returns)
+        +List~Return~ loadAll()
+    }
+
+    class ReturnService {
+        +Return registerReturn(String saleId, List~String~ productIds, String reason)
+        +List~Return~ viewAllReturns()
+        +List~Return~ viewReturnsByCustomer(String customerId)
+        +List~Return~ viewReturnsBySale(String saleId)
+        +double generateMonthlyBalance(int month, int year)
+    }
+
+    class ProductService {
+        +void restoreStock(String productId, int quantity)
     }
 
     class SaleItem {
@@ -105,14 +231,72 @@ classDiagram
         +double calculateSubtotal()
     }
 
+    class Warranty {
+        <<abstract>>
+        -String warrantyId
+        -Product product
+        -Sale sale
+        -LocalDate startDate
+        -LocalDate endDate
+        +String getWarrantyId()
+        +Product getProduct()
+        +Sale getSale()
+        +LocalDate getStartDate()
+        +LocalDate getEndDate()
+        +int getDurationInMonths()*
+        +String getWarrantyType()*
+        +double getAdditionalCost()*
+        +boolean isActive(LocalDate date)
+        +String generateWarrantyCertificate()
+    }
+
+    class BasicWarranty {
+        -int DURATION_IN_MONTHS$ = 6
+        +int getDurationInMonths()
+        +String getWarrantyType()
+        +double getAdditionalCost()
+    }
+
+    class ExtendedWarranty {
+        -int DURATION_IN_MONTHS$ = 12
+        -double COST_PERCENTAGE$ = 0.10
+        +int getDurationInMonths()
+        +String getWarrantyType()
+        +double getAdditionalCost()
+    }
+
     Person <|-- Customer
     Person <|-- Seller
 
     Product <|-- VideoGame
     Product <|-- Console
+    Product <|-- Accessory
+    
+    Accessory <|-- Controller
+    Accessory <|-- Cable
+    Accessory <|-- Memory
+
+    Promotion <|-- PercentageDiscount
+    Promotion <|-- CategoryDiscount
+    Promotion <|-- BulkPurchaseDiscount
+
+    Warranty <|-- BasicWarranty
+    Warranty <|-- ExtendedWarranty
 
     Customer "1" --> "0..*" Sale : makes
     Seller "1" --> "0..*" Sale : attends
 
-    Sale "1" *-- "1.." SaleItem : contains
+    Sale "1" *-- "1..*" SaleItem : contains
     SaleItem "0..*" --> "1" Product : includes
+
+    Accessory "0..*" --> "0..*" Console : compatible with
+    CategoryDiscount ..> VideoGame : checks category via instanceof
+    CategoryDiscount ..> Console : checks category via instanceof
+    Sale "1" --> "0..1" Promotion : applied promotion (by name, not object reference)
+
+    Return "0..*" --> "1" Sale : references
+    Return "0..*" --> "1..*" Product : contains
+    ReturnService ..> ReturnRepository : uses
+    ReturnService ..> Return : manages
+    ReturnService ..> ProductService : calls restoreStock
+```

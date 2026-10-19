@@ -1,7 +1,7 @@
 # Bitácora de Consultas Técnicas — Java
 - **Student:** Jhonatan David Galindo Gómez
 - **Student ID:** 1066283456
-- **Role:** Developer 2 — Person Module  
+- **Role:** Developer 2 — Person Module
 - **Tool used:** Claude (Anthropic)
 ---
 
@@ -148,6 +148,19 @@ Patrón estándar: cargar todos los registros a una lista (`loadCustomer()`), fi
 
 **Lección clave o aplicación:**
 Los archivos de texto no permiten borrar contenido "desde el medio"; el patrón *leer → filtrar en memoria → sobrescribir* es la solución estándar para operaciones CRUD sobre archivos planos, y se integra directamente con los métodos `loadCustomer`/`saveCustomer` ya existentes en el proyecto.
+
+---
+
+## 12. Columna discriminadora al persistir subclases en CSV
+
+**Pregunta o problema planteado:**
+Cómo funciona la "discriminación" (columna discriminadora) usada en `AccessoryRepository` y `ProductRepository` para guardar distintos tipos de objetos (`Cable`, `Controller`, `Memory` / `VideoGame`, `Console`) en un mismo archivo CSV.
+
+**Solución técnica sugerida:**
+Se agrega un campo inicial en cada línea del CSV (`CABLE`, `CONTROLLER`, `MEMORY`, etc.) definido como constante `static final String`. Al escribir (`toCsvLine`), se usa `instanceof` con pattern matching para elegir el formato de línea según el tipo real del objeto. Al leer (`fromCsvLine`), ese mismo valor determina qué constructor de subclase invocar para reconstruir el objeto correcto.
+
+**Lección clave o aplicación:**
+Es el equivalente "hecho a mano" del patrón *single table inheritance*: resuelve el problema de **persistir polimorfismo** en un formato plano que, por sí solo, no distingue tipos. Se integra directamente en `AccessoryRepository.toCsvLine()`/`fromCsvLine()` y `ProductRepository.toCsvLine()`/`fromCsvLine()`, permitiendo que una jerarquía de clases (`Accessory`, `Product`) se guarde y reconstruya correctamente desde un único archivo CSV.
 
 ---
 

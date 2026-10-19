@@ -1,0 +1,228 @@
+package com.gamezone.service;
+
+import com.gamezone.model.Accessory;
+import com.gamezone.model.Product;
+import com.gamezone.model.Return;
+import com.gamezone.model.Sale;
+import com.gamezone.model.SaleItem;
+import com.gamezone.persistence.ReturnRepository;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Manages the business logic related to product returns, validation, stock restoration,
+ * and financial balance calculations[cite: 23].
+ */
+public class ReturnService {
+    private final ReturnRepository returnRepository;
+    private final SaleService saleService;
+    private final ProductService productService;
+    private final AccessoryService accessoryService;
+    private final WarrantyService warrantyService;
+    private final List<Return> returns;
+
+    /**
+     * Initializes the ReturnService with the required repository, services, and initial returns list[cite: 23].
+     *
+     * @param returnRepository the repository handling return persistence
+     * @param saleService the service handling sales
+     * @param productService the service handling products and inventory
+     * @param returns the initial in-memory list of returns
+     * @param accessoryService the service handling accessories and their inventory
+     * @param warrantyService the service managing warranties, used to cancel the
+     * warranties of returned products
+     */
+    public ReturnService(ReturnRepository returnRepository, SaleService saleService, ProductService productService, List<Return> returns, AccessoryService accessoryService,
+                         WarrantyService warrantyService) {
+        this.returnRepository = returnRepository;
+        this.saleService = saleService;
+        this.productService = productService;
+        this.returns = returns != null ? returns : new ArrayList<>();
+        this.accessoryService = accessoryService;
+        this.warrantyService = warrantyService;
+    }
+
+    /**
+     * Calculates the total sales for a specific month and year.
+     *
+     * @param month the month to filter sales by (1-12)
+     * @param year  the year to filter sales by
+     * @return      the sum of all sale totals for the specified month and year
+     */
+    public double calculateMonthlySales(int month, int year){
+        double totalSales=0.0;
+        for (Sale sale : saleService.listAllSales()) {
+            LocalDate saleDate = sale.getDate();
+            if (saleDate != null && saleDate.getMonthValue() == month && saleDate.getYear() == year) {
+                totalSales += sale.calculateFinalTotal();
+            }
+        }
+        return totalSales;
+    }
+
+    /**
+     * Calculates the total returns for a specific month and year.
+     *
+     * @param month the month to filter returns by (1-12)
+     * @param year  the year to filter returns by
+     * @return      the sum of all refund amounts for the specified month and year
+     */
+    public double calculateMonthlyReturns(int month,int year){
+        double totalReturns = 0.0;
+
+
+        for (Return ret : returns) {
+            LocalDate returnDate = ret.getReturnDate();
+            if (returnDate != null && returnDate.getMonthValue() == month && returnDate.getYear() == year) {
+                totalReturns += ret.getRefundAmount();
+            }
+        }
+        return totalReturns;
+    }
+
+    /**
+     * Registers a new product return by validating the sale existence, the 30-day return window,
+     * verifying that products belong to the sale, restoring inventory stock, and calculating the refund amount[cite: 23].
+     * Stock is restored through {@link AccessoryService} for accessories and through
+     * {@link ProductService} for every other product type.
+     * Cancels the warranties of the returned products and adds their refundable
+     * cost to the refund amount.
+     *
+     * @param saleId the unique identifier of the original sale
+     * @param productIds the list of product IDs being returned
+     * @param reason the reason for the return
+     * @return the newly created Return instance
+     * @throws IllegalArgumentException if any validation fails
+     */
+    public Return registerReturn(String saleId, List<String> productIds, String reason) {
+        if (saleId == null || saleId.isBlank()) {
+            throw new IllegalArgumentException("El identificador de la venta no puede ser nulo o vacío.");
+        }
+        if (productIds == null || productIds.isEmpty()) {
+            throw new IllegalArgumentException("Debe indicar al menos un producto para la devolución.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("El motivo de la devolución es obligatorio.");
+        }
+
+        Sale originalSale = null;
+        for (Sale s : saleService.listAllSales()) {
+            if (s.getId().equals(saleId)) {
+                originalSale = s;
+                break;
+            }
+        }
+
+        if (originalSale == null) {
+            throw new IllegalArgumentException("La venta original con ID " + saleId + " no existe.");
+        }
+
+        if (!originalSale.canBeReturned()) {
+            throw new IllegalArgumentException("La venta ha superado el plazo límite de 30 días para devoluciones.");
+        }
+
+        List<Product> productsToReturn = new ArrayList<>();
+        double warrantyRefund = 0.0;
+        for (String id : productIds) {
+            Product matchedProduct = null;
+            int quantityToRestore = 0;
+
+            for (SaleItem item : originalSale.getItems()) {
+                if (item.getProduct().getProductId().equals(id)) {
+                    matchedProduct = item.getProduct();
+                    quantityToRestore = item.getQuantity();
+                    break;
+                }
+            }
+
+            if (matchedProduct == null) {
+                throw new IllegalArgumentException("El producto con ID " + id + " no pertenece a la venta original.");
+            }
+
+            productsToReturn.add(matchedProduct);
+            restoreStockFor(matchedProduct, quantityToRestore);
+            warrantyRefund += warrantyService.cancelWarranties(matchedProduct.getProductId(), saleId);
+
+        }
+
+        String returnId = "RET-" + UUID.randomUUID().toString().substring(0, 8);
+        Return newReturn = new Return(returnId, LocalDate.now(), originalSale, productsToReturn, reason);
+        newReturn.calculateRefundAmount(warrantyRefund);
+        returns.add(newReturn);
+        System.out.println("Devolución registrada exitosamente.");
+        returnRepository.saveAll(returns);
+        return newReturn;
+    }
+
+    /**
+     * Restores stock for a returned item, delegating to the service that manages
+     * its inventory: {@link AccessoryService} for accessories and
+     * {@link ProductService} for any other product.
+     *
+     * @param product the returned product or accessory
+     * @param quantity the quantity to add back to stock
+     */
+    private void restoreStockFor(Product product, int quantity) {
+        if (product instanceof Accessory) {
+            accessoryService.restoreStock(product.getProductId(), quantity);
+        } else {
+            productService.restoreStock(product.getProductId(), quantity);
+        }
+    }
+
+    /**
+     * Returns a list of all registered returns[cite: 23].
+     *
+     * @return the list containing all returns
+     */
+    public List<Return> viewAllReturns(){
+        return returns;
+    }
+
+    /**
+     * Filters and returns all returns associated with a specific customer[cite: 23].
+     *
+     * @param customerId the ID of the customer whose returns are requested
+     * @return the list of returns matching the customer ID
+     */
+    public List<Return> viewReturnsByCustomer(String customerId){
+        List<Return> returnByCustomer = new ArrayList<>();
+        for (Return r : returns){
+            if (r.getOriginalSale().getCustomer().getId().equals(customerId)){
+                returnByCustomer.add(r);
+            }
+        }
+        return returnByCustomer;
+    }
+
+    /**
+     * Filters and returns all returns associated with a specific sale[cite: 23].
+     *
+     * @param saleId the ID of the sale whose returns are requested
+     * @return the list of returns matching the sale ID
+     */
+    public List<Return> viewReturnsBySale(String saleId){
+        List<Return> returnBySale = new ArrayList<>();
+        for (Return r : returns){
+            if (r.getOriginalSale().getId().equals(saleId)){
+                returnBySale.add(r);
+            }
+        }
+        return returnBySale;
+    }
+
+    /**
+     * Generates the net monthly balance for a specific month and year by
+     * subtracting total returns from total sales.
+     *
+     * @param month the month for which to calculate the balance (1-12)
+     * @param year  the year for which to calculate the balance
+     * @return      the monthly balance (sales - returns)
+     */
+    public double generateMonthlyBalance(int month, int year) {
+        return calculateMonthlySales(month,year) - calculateMonthlyReturns(month,year);
+    }
+}

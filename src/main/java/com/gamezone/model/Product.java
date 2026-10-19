@@ -4,7 +4,6 @@ package com.gamezone.model;
  * Abstract base class that represents a general product commercialized by
  * GameZone Unicesar. Holds the attributes and behavior common to every product
  * type (video games, consoles, etc.).
- *
  * This class cannot be instantiated directly since it represents a generic
  * category. Concrete subclasses must provide their own implementation of
  * {@link #getFullDescription()}.
@@ -127,6 +126,16 @@ public abstract class Product {
                     "Insufficient stock for product " + productId);
         }
         this.stockQuantity -= quantity;
+    }
+    /**
+     * Decreases the available stock by the given quantity. Should only be
+     * called after verifying with {@link #hasEnoughStock(int)} that enough
+     * stock is available.
+     *
+     * @param quantity the amount to add from stock
+     */
+    public void increaseStock(int quantity){
+        this.stockQuantity += quantity;
     }
 
     /**
