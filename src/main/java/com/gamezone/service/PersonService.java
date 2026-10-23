@@ -3,7 +3,7 @@ package com.gamezone.service;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Seller;
 import com.gamezone.persistence.PersonRepository;
-
+import com.gamezone.validation.PersonValidator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @author Jhonatan David Galindo Gómez
  */
-public class PersonService{
+public class PersonService {
     private final PersonRepository repository;
     private final List<Customer> customers;
     private final List<Seller> sellers;
@@ -30,75 +30,83 @@ public class PersonService{
         this.sellers = new ArrayList<>(repository.loadSeller());
     }
     /**
-     * Registers a new customer, adds them to the active list, and saves the updated records.
+     * Registers a new customer after validating its data and identifier.
      *
-     * @param name  The full name of the customer.
-     * @param phone The contact phone number.
-     * @param id    The unique identification number.
-     * @param mail  The email address.
+     * @throws com.gamezone.exceptions.InvalidDataException if any field is invalid
+     * @throws com.gamezone.exceptions.BusinessRuleException if the id is already in use
      */
-    public void registerCustomer(String name, String phone,String id,String mail){
+    public void registerCustomer(String name, String phone, String id, String mail) {
+        PersonValidator.validatePersonData(id, name, mail, phone);
+        PersonValidator.validateUniquePerson(customers, id);
+
         Customer customer = new Customer(name, phone, id, mail);
         customers.add(customer);
         repository.saveCustomer(customers);
     }
     /**
-     * Registers a new seller, adds them to the active list, and saves the updated records.
+     * Registers a new seller after validating its data and identifier.
+     * Sellers have no email, so {@code null} is passed for that parameter.
      *
-     * @param name         The full name of the seller.
-     * @param phone        The contact phone number.
-     * @param id           The unique identification number.
-     * @param employeeCode The unique employee code.
-     * @param workShift    The work shift schedule.
+     * @throws com.gamezone.exceptions.InvalidDataException if any field is invalid
+     * @throws com.gamezone.exceptions.BusinessRuleException if the id is already in use
      */
-    public void registerSeller(String name,String phone,String id,
-                               String employeeCode,String workShift){
-        Seller seller = new Seller(name,phone,id,employeeCode,workShift);
+    public void registerSeller(String name, String phone, String id,
+                               String employeeCode, String workShift) {
+        PersonValidator.validatePersonData(id, name, null, phone);
+        PersonValidator.validateUniquePerson(sellers, id);
+
+        Seller seller = new Seller(name, phone, id, employeeCode, workShift);
         sellers.add(seller);
         repository.saveSeller(sellers);
     }
-    /**
-     * Returns an unmodifiable view of the registered sellers list.
-     *
-     * @return An unmodifiable list of sellers.
-     */
-    public List<Seller> listSeller(){
-        return Collections.unmodifiableList(sellers); //Inspirado en Freddy
+
+    public List<Seller> listSeller() {
+        return Collections.unmodifiableList(sellers);
     }
-    /**
-     * Returns an unmodifiable view of the registered customers list.
-     *
-     * @return An unmodifiable list of customers.
-     */
-    public List<Customer> listCustomer(){
-        return Collections.unmodifiableList(customers); //Inspirado en Freddy
+
+    public List<Customer> listCustomer() {
+        return Collections.unmodifiableList(customers);
     }
-    /**
-     * Searches for a seller by their unique identification number.
-     *
-     * @param id The identification number to search for.
-     * @return The Seller object if found, or null otherwise.
-     */
-    public Seller findSeller(String id){
-        for (Seller s:sellers){
-            if (s.getId().equals(id)){
+
+    /** Returns the seller, or null if not found (kept for callers that check null). */
+    public Seller findSeller(String id) {
+        for (Seller s : sellers) {
+            if (s.getId().equals(id)) {
                 return s;
             }
         }
         return null;
     }
-    /**
-     * Searches for a customer by their unique identification number.
-     *
-     * @param id The identification number to search for.
-     * @return The Customer object if found, or null otherwise.
-     */
-    public Customer findCustomer(String id){
-        for (Customer c:customers){
-            if(c.getId().equals(id)){
+
+    /** Returns the customer, or null if not found (kept for callers that check null). */
+    public Customer findCustomer(String id) {
+        for (Customer c : customers) {
+            if (c.getId().equals(id)) {
                 return c;
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the seller with the given id.
+     *
+     * @throws com.gamezone.exceptions.ResourceNotFoundException if it does not exist
+     */
+    public Seller getSellerOrThrow(String id) {
+        Seller seller = findSeller(id);
+        PersonValidator.validatePersonExists(seller, id);
+        return seller;
+    }
+
+    /**
+     * Returns the customer with the given id.
+     *
+     * @throws com.gamezone.exceptions.ResourceNotFoundException if it does not exist
+     */
+    public Customer getCustomerOrThrow(String id) {
+        Customer customer = findCustomer(id);
+        PersonValidator.validatePersonExists(customer, id);
+        return customer;
     }
 }
