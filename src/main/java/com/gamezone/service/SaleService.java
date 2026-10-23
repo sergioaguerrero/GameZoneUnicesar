@@ -1,7 +1,10 @@
 package com.gamezone.service;
 
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.model.*;
 import com.gamezone.persistence.SaleRepository;
+import com.gamezone.validation.SaleValidator;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,6 +28,9 @@ import java.util.Optional;
  * when requested, an extended warranty whose additional cost is added to the
  * sale total. All warranty rules live in {@link WarrantyService}; this class
  * only decides when to invoke them.
+ *
+ * Sale data rules (customer, seller and at least one product) are delegated
+ * to {@link SaleValidator}.
  */
 public class SaleService {
     private final SaleRepository saleRepository;
@@ -153,7 +159,7 @@ public class SaleService {
 
     /**
      * Registers a new sale following the unified sequential registration flow (Integration A3):
-     * 1. Validate that the sale contains at least one item.
+     * 1. Validate customer, seller and that the sale contains at least one item (SaleValidator).
      * 2. Resolve each item as product or accessory and validate its stock.
      * 3. Create the sale and calculate its subtotal.
      * 4. Query PromotionService.findBestPromotionFor(sale) and record the discount,
@@ -172,16 +178,12 @@ public class SaleService {
      */
     public boolean registerSale(String customerId, String sellerId, List<SaleItem> items,
                                 List<String> productIdsWithExtendedWarranty) {
-        // Step 1: Validate that the sale has at least one item.
-        if (items == null || items.isEmpty()) {
-            System.err.println("Sale validation failed: The sale must contain at least one item.");
-            return false;
-        }
-
         Customer customer = personService.findCustomer(customerId);
         Seller seller = personService.findSeller(sellerId);
-        if (customer == null || seller == null) {
-            System.err.println("Sale validation failed: Customer or seller does not exist.");
+        try {
+            SaleValidator.validateSaleData(customer, seller, productsOf(items));
+        } catch (InvalidDataException | BusinessRuleException e) {
+            System.err.println("Sale validation failed: " + e.getMessage());
             return false;
         }
 
@@ -203,7 +205,6 @@ public class SaleService {
             }
         }
 
-        // Step 2: Resolve each item as product or accessory and validate its stock.
         for (SaleItem item : items) {
             String productId = item.getProduct().getProductId();
             int requestedQuantity = item.getQuantity();
@@ -223,7 +224,6 @@ public class SaleService {
             }
         }
 
-        // Step 3: Create the sale and calculate its subtotal.
         List<Sale> existingSales = listAllSales();
         String saleId = nextSaleId(existingSales);
         Sale sale = new Sale(saleId, LocalDate.now(), customer, seller);
@@ -238,8 +238,6 @@ public class SaleService {
         }
         double subtotal = sale.calculateSubtotal();
 
-        // Step 4: Query PromotionService.findBestPromotionFor(sale) and record the discount,
-        // ensuring that it is calculated strictly on the subtotal of the items.
         Promotion bestPromotion = promotionService.findBestPromotionFor(sale);
         double discountAmount = 0.0;
         if (bestPromotion != null) {
@@ -251,16 +249,11 @@ public class SaleService {
             sale.setDiscountAmount(0.0);
         }
 
-        // Step 5: Generate basic warranty for each console and requested extended warranties,
-        // summing the cost of the extended warranties.
         applyWarranties(sale, extendedIds);
         double extendedWarrantyCost = sale.getExtendedWarrantyCost();
 
-        // Step 6: Calculate final total applying formula: subtotal - discount + extended warranties cost.
         double finalTotal = subtotal - discountAmount + extendedWarrantyCost;
 
-        // Step 7: Update inventory delegating to ProductService or AccessoryService,
-        // according to item type.
         for (SaleItem item : items) {
             String productId = item.getProduct().getProductId();
             int quantity = item.getQuantity();
@@ -271,13 +264,32 @@ public class SaleService {
             }
         }
 
-        // Step 8: Persist the sale and the warranties.
         existingSales.add(sale);
         saleRepository.saveSales(existingSales);
         warrantyService.persist();
 
         System.out.println("Venta registrada exitosamente");
         return true;
+    }
+
+    /**
+     * Extracts the products from the given sale items, ignoring null items or
+     * items without a product, so the list can be passed to
+     * {@link SaleValidator#validateSaleData}. Tolerates a null list.
+     *
+     * @param items the items of the sale, possibly null
+     * @return the products found in the items; empty if there are none
+     */
+    private List<Product> productsOf(List<SaleItem> items) {
+        List<Product> products = new ArrayList<>();
+        if (items != null) {
+            for (SaleItem item : items) {
+                if (item != null && item.getProduct() != null) {
+                    products.add(item.getProduct());
+                }
+            }
+        }
+        return products;
     }
 
     /**
@@ -342,7 +354,6 @@ public class SaleService {
                 try {
                     max = Math.max(max, Integer.parseInt(id.substring(5)));
                 } catch (NumberFormatException ignored) {
-                    // ids with a custom format do not affect the sequence
                 }
             }
         }
@@ -411,5 +422,33 @@ public class SaleService {
             }
         }
         return result;
+    }
+
+    /**
+     * Searches for a sale by its identifier.
+     *
+     * @param saleId the id of the sale to look for
+     * @return the sale, or null if not found
+     */
+    public Sale findSaleById(String saleId) {
+        for (Sale sale : listAllSales()) {
+            if (sale.getId().equals(saleId)) {
+                return sale;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the sale with the given id.
+     *
+     * @param saleId the id of the sale to look for
+     * @return the sale found
+     * @throws com.gamezone.exceptions.ResourceNotFoundException if it does not exist
+     */
+    public Sale getSaleOrThrow(String saleId) {
+        Sale sale = findSaleById(saleId);
+        SaleValidator.validateSaleExists(sale, saleId);
+        return sale;
     }
 }
