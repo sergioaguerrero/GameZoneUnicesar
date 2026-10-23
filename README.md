@@ -7,6 +7,7 @@ GameZone Unicesar is a robust, console-based enterprise solution designed to man
 ## Table of Contents
 - [Features](#features)
 - [System Architecture](#system-architecture)
+- [Validation & Exception Handling Architecture](#validation--exception-handling-architecture)
 - [Technologies Used](#technologies-used)
 - [Requirements](#requirements)
 - [Build and Run](#build-and-run)
@@ -120,6 +121,97 @@ flowchart TD
 
 ---
 
+## Validation & Exception Handling Architecture
+
+As part of Requirement 6 (**Validations and Exceptions**), the system incorporates two new architectural packages to establish a robust, fail-fast error management and domain validation strategy: com.gamezone.exceptions and com.gamezone.validation.
+
+`mermaid
+flowchart LR
+    subgraph UI ["UI Layer (com.gamezone.ui)"]
+        CM["ConsoleMenu"]
+    end
+
+    subgraph Service ["Service Layer (com.gamezone.service)"]
+        PS["ProductService"]
+        PeS["PersonService"]
+        SS["SaleService"]
+    end
+
+    subgraph Validation ["Validation Layer (com.gamezone.validation)"]
+        PV["ProductValidator"]
+        PeV["PersonValidator"]
+        SV["SaleValidator"]
+    end
+
+    subgraph Exceptions ["Exception Hierarchy (com.gamezone.exceptions)"]
+        GZE["GameZoneException (Unchecked)"]
+        RNFE["ResourceNotFoundException"]
+        BRE["BusinessRuleException"]
+        IDE["InvalidDataException"]
+        PE["PersistenceException"]
+    end
+
+    subgraph Persistence ["Persistence Layer (com.gamezone.persistence)"]
+        Repo["ProductRepo / PersonRepo / SaleRepo"]
+    end
+
+    CM -->|Calls Operations| Service
+    Service -->|1. Enforces Rules| Validation
+    Validation -->|Throws| IDE
+    Validation -->|Throws| BRE
+    Validation -->|Throws| RNFE
+    Repo -->|Wraps IOException & Throws| PE
+    Service -->|Propagates Unchecked| Exceptions
+    CM -->|Catches & Shows Spanish Messages| Exceptions
+
+    GZE --- RNFE
+    GZE --- BRE
+    GZE --- IDE
+    GZE --- PE
+`
+
+### Purpose of the Exception Layer (com.gamezone.exceptions)
+
+The exception layer establishes a unified, strongly typed domain exception hierarchy rooted at GameZoneException (an unchecked abstract exception extending RuntimeException). This replaces ambiguous generic exceptions (such as IllegalArgumentException) with four specialized semantic categories:
+
+1. **ResourceNotFoundException (RESOURCE_NOT_FOUND):**
+   * **Purpose:** Thrown when a queried entity (product, customer, seller, sale) does not exist in the system.
+   * **Attributes:** Encapsulates the specific esourceType and esourceId, formatting natural-language Spanish messages with correct grammatical gender.
+2. **BusinessRuleException (BUSINESS_RULE):**
+   * **Purpose:** Thrown when an operation violates a business invariant (e.g., attempting to sell more items than currently in stock, registering a duplicate person ID, or submitting a sale with an empty product list).
+3. **InvalidDataException (INVALID_DATA):**
+   * **Purpose:** Thrown when incoming input violates format, range, or syntactic rules (e.g., negative prices, empty names, malformed email addresses).
+   * **Attributes:** Encapsulates the specific ieldName that failed validation.
+4. **PersistenceException (PERSISTENCE):**
+   * **Purpose:** Thrown when a file read/write operation fails in the repository layer (e.g., missing data file, corrupt CSV records, disk permission errors).
+   * **Attributes:** Retains the underlying technical cause (Throwable cause) via exception chaining while providing a sanitized message for upper layers.
+
+### Purpose of the Validation Layer (com.gamezone.validation)
+
+The validation layer introduces static, stateless utility validators (ProductValidator, PersonValidator, SaleValidator) dedicated strictly to asserting preconditions and domain rules before any state modification or persistence takes place:
+
+* **Fail-Fast Invocation:** Validators are executed at the threshold of the service layer methods, ensuring that invalid transactions fail immediately without wasting compute or corrupting in-memory collections.
+* **Zero Persistence Coupling:** Validators have no access to the persistence layer (com.gamezone.persistence). They operate as pure functions over domain objects and parameters provided directly by the service layer, ensuring microsecond execution times and effortless unit testability.
+
+### Impact on Separation of Responsibilities (SoC)
+
+* **Domain & Model Purity:** Entity models remain focused exclusively on business representations and calculations without being polluted with defensive validation loops.
+* **Service Simplification:** Services act as clean orchestrators (calling validators, updating entity state, delegating persistence) rather than mixing business logic with repetitive syntactic checks.
+* **Infrastructure Isolation:** Repositories handle low-level file I/O and wrap checked IOException into PersistenceException, preventing filesystem plumbing from leaking into domain contracts.
+* **Presentation Clarity:** ConsoleMenu delegates all business and validation decisions to the underlying layers, focusing solely on user I/O and formatting.
+
+### Impact on End-User Experience (UX)
+
+* **Elimination of Raw Stack Traces:** The application never exposes technical stack traces (e.printStackTrace()) or cryptic Java runtime errors to the end user.
+* **Consistent, Contextual Spanish Feedback:**
+  * For missing entities: "No se encontró el recurso solicitado: <detalle>"
+  * For broken business rules: "No se puede completar la operación: <detalle>"
+  * For invalid field inputs: "Los datos ingresados no son válidos: <detalle>"
+  * For system or disk errors: "Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador."
+* **Seamless Menu Continuity:** Catastrophic crashes are entirely avoided. When an error occurs, the user receives an informative message and is returned smoothly to the menu loop, preserving application state and data integrity.
+
+---
+
 ## Technologies Used
 
 * **Language:** Java (JDK 26)
@@ -203,6 +295,12 @@ GameZoneUnicesar/
 │       └── java/
 │           └── com/
 │               └── gamezone/
+│                   ├── exceptions/
+│                   │   ├── BusinessRuleException.java
+│                   │   ├── GameZoneException.java
+│                   │   ├── InvalidDataException.java
+│                   │   ├── PersistenceException.java
+│                   │   └── ResourceNotFoundException.java
 │                   ├── model/
 │                   │   ├── Accessory.java
 │                   │   ├── BasicWarranty.java
@@ -242,6 +340,10 @@ GameZoneUnicesar/
 │                   │   └── WarrantyService.java
 │                   ├── ui/
 │                   │   └── ConsoleMenu.java
+│                   ├── validation/
+│                   │   ├── PersonValidator.java
+│                   │   ├── ProductValidator.java
+│                   │   └── SaleValidator.java
 │                   └── Main.java
 ├── data/
 │   ├── accessories.csv
@@ -276,6 +378,8 @@ GameZoneUnicesar/
 ## Design Documentation
 
 - [General Analysis](docs/analysis.md)
+- [Exception & Validation Analysis](docs/exception-analysis.md)
+- [Exception & Validation Class Diagram](docs/exception-class-diagram.md)
 - [Accessory Module Analysis](docs/accessory-analysis.md)
 - [Promotion Module Analysis](docs/promotion-analysis.md)
 - [Return Module Analysis](docs/return-analysis.md)
