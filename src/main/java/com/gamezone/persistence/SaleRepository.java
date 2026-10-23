@@ -1,8 +1,11 @@
 package com.gamezone.persistence;
 
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.*;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +45,7 @@ public class SaleRepository {
      * Saves a list of sales into the CSV file.
      *
      * @param sales the list of sales to be saved
+     * @throws PersistenceException if the file cannot be written
      */
     public void saveSales(List<Sale> sales){
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(saleCSV))){
@@ -51,13 +55,13 @@ public class SaleRepository {
             }
             System.out.println("Sales saved successfully in " + saleCSV);
         } catch (IOException e) {
-            System.err.println("Error saving sales  in csv file." + e.getMessage());
+            throw new PersistenceException(
+                    "Error de escritura: no se pudieron guardar las ventas en " + saleCSV, e);
         }
     }
 
     /**
      * Loads the sales from the CSV file and reconstructs the objects.
-     *
      * The current format is {@code id,date,customerId,sellerId,items,extendedWarrantyCost}.
      * Legacy lines written before sales had an identifier
      * ({@code date,customerId,sellerId,items}) are still supported: they
@@ -70,9 +74,13 @@ public class SaleRepository {
      * @param allSellers   the master list of sellers
      * @param allProducts  the master list of products
      * @return a list of reconstructed Sale objects
+     * @throws PersistenceException if the file exists but cannot be read
      */
     public List<Sale> loadSales(List<Customer> allCustomers, List<Seller> allSellers, List<Product> allProducts) {
         List<Sale> sales = new ArrayList<>();
+        if (!Files.exists(Path.of(saleCSV))) {
+            return sales;
+        }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(saleCSV))) {
             String line;
@@ -131,7 +139,8 @@ public class SaleRepository {
             }
             System.out.println("Sales successfully loaded from " + saleCSV);
         } catch (IOException e) {
-            System.err.println("The file could not be read: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error de lectura: no se pudieron cargar las ventas desde " + saleCSV, e);
         }
 
         return sales;
