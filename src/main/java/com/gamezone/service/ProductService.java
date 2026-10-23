@@ -1,9 +1,13 @@
 package com.gamezone.service;
 
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.model.Console;
 import com.gamezone.model.Product;
 import com.gamezone.model.VideoGame;
 import com.gamezone.persistence.ProductRepository;
+import com.gamezone.validation.ProductValidator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +22,7 @@ import java.util.Optional;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private List<Product> products;
+    private final List<Product> products;
 
     /**
      * Creates a product service backed by the given repository, loading any
@@ -42,12 +46,14 @@ public class ProductService {
      * @param genre genre of the game
      * @param ageRating recommended age rating
      * @return the newly created video game
+     * @throws InvalidDataException if the id, title, price or stock are invalid
      * @throws IllegalArgumentException if a product with the same id already
      * exists
      */
     public VideoGame registerVideoGame(String productId, String title, double price,
-            int stockQuantity, String platform, String genre,
-            String ageRating) {
+                                       int stockQuantity, String platform, String genre,
+                                       String ageRating) {
+        ProductValidator.validateProductData(productId, title, price, stockQuantity);
         validateNewProductId(productId);
         VideoGame videoGame = new VideoGame(productId, title, price, stockQuantity,
                 platform, genre, ageRating);
@@ -67,12 +73,14 @@ public class ProductService {
      * @param model model of the console
      * @param generation generation number of the console
      * @return the newly created console
+     * @throws InvalidDataException if the id, title, price or stock are invalid
      * @throws IllegalArgumentException if a product with the same id already
      * exists
      */
     public Console registerConsole(String productId, String title, double price,
-            int stockQuantity, String brand, String model,
-            int generation) {
+                                   int stockQuantity, String brand, String model,
+                                   int generation) {
+        ProductValidator.validateProductData(productId, title, price, stockQuantity);
         validateNewProductId(productId);
         Console console = new Console(productId, title, price, stockQuantity,
                 brand, model, generation);
@@ -123,13 +131,13 @@ public class ProductService {
      *
      * @param productId the id of the product whose stock will be updated
      * @param quantity the quantity to subtract from stock
-     * @throws IllegalArgumentException if the product does not exist or there
-     * is not enough stock available
+     * @throws ResourceNotFoundException if the product does not exist
+     * @throws BusinessRuleException if there is not enough stock available
      */
     public void updateStock(String productId, int quantity) {
-        Product product = findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                "Product not found: " + productId));
+        Product product = findById(productId).orElse(null);
+        ProductValidator.validateProductExists(product, productId);
+        ProductValidator.validateStockAvailability(product, quantity);
         product.decreaseStock(quantity);
         persist();
     }
@@ -139,12 +147,11 @@ public class ProductService {
      *
      * @param productId the id of the product whose stock will be restored
      * @param quantity the quantity to add to stock
-     * @throws IllegalArgumentException if the product does not exist
+     * @throws ResourceNotFoundException if the product does not exist
      */
     public void restoreStock(String productId, int quantity) {
-        Product product = findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Product not found: " + productId));
+        Product product = findById(productId).orElse(null);
+        ProductValidator.validateProductExists(product, productId);
 
         // Aumenta el stock sumando la cantidad devuelta
         product.increaseStock(quantity);
@@ -159,8 +166,10 @@ public class ProductService {
      * @param price the new price
      * @param stockQuantity the new stock quantity
      * @return true if the product was found and updated, false otherwise
+     * @throws InvalidDataException if the id, title, price or stock are invalid
      */
     public boolean updateProduct(String productId, String title, double price, int stockQuantity) {
+        ProductValidator.validateProductData(productId, title, price, stockQuantity);
         Optional<Product> found = findById(productId);
         if (found.isEmpty()) {
             return false;
