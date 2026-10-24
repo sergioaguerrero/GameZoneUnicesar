@@ -1,5 +1,6 @@
 package com.gamezone.persistence;
 
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.Console;
 import com.gamezone.model.Product;
 import com.gamezone.model.VideoGame;
@@ -29,6 +30,7 @@ public class ProductRepository {
      * Overwrites the CSV file with the given list of products.
      *
      * @param products the complete list of products to persist
+     * @throws PersistenceException if the file cannot be written
      */
     public void saveAll(List<Product> products) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
@@ -37,7 +39,8 @@ public class ProductRepository {
                 writer.newLine();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to save products to " + FILE_PATH, e);
+            throw new PersistenceException(
+                    "Error de escritura: no se pudieron guardar los productos en " + FILE_PATH, e);
         }
     }
 
@@ -47,6 +50,7 @@ public class ProductRepository {
      *
      * @return the list of products found in the file, or an empty list if the
      * file does not exist
+     * @throws PersistenceException if the file exists but cannot be read
      */
     public List<Product> loadAll() {
         List<Product> products = new ArrayList<>();
@@ -63,7 +67,8 @@ public class ProductRepository {
                 products.add(fromCsvLine(line));
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load products from " + FILE_PATH, e);
+            throw new PersistenceException(
+                    "Error de lectura: no se pudieron cargar los productos desde " + FILE_PATH, e);
         }
         return products;
     }

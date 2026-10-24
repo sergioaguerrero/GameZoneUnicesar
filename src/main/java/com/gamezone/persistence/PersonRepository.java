@@ -1,11 +1,15 @@
 package com.gamezone.persistence;
 
+import com.gamezone.exceptions.PersistenceException;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Seller;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 /**
  * Handles persistence operations for managing Customer and Seller data using CSV files.
  *
@@ -14,6 +18,7 @@ import java.io.*;
 public class PersonRepository {
     private static final String customerCSV = "data/customers.csv";
     private static final String sellerCSV = "data/sellers.csv";
+
     /**
      * Converts a Customer object into a CSV-formatted string.
      *
@@ -23,6 +28,7 @@ public class PersonRepository {
     public String customerLine(Customer c){
         return c.getName()+","+c.getPhone()+","+c.getId()+","+c.getMail();
     }
+
     /**
      * Converts a Seller object into a CSV-formatted string.
      *
@@ -32,10 +38,12 @@ public class PersonRepository {
     public String sellerLine(Seller s) {
         return s.getName()+","+s.getPhone()+","+s.getId()+","+s.getEmployeeCode()+","+s.getWorkShift();
     }
+
     /**
      * Saves a list of customers to the CSV file.
      *
      * @param customers The list of customers to save.
+     * @throws PersistenceException if the file cannot be written.
      */
     public void saveCustomer(List<Customer> customers) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(customerCSV))) {
@@ -45,16 +53,23 @@ public class PersonRepository {
             }
             System.out.println("Customers saved successfully in " + customerCSV);
         } catch (IOException e) {
-            System.err.println("Error saving the CSV file: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error de escritura: no se pudieron guardar los clientes en " + customerCSV, e);
         }
     }
+
     /**
      * Loads a list of customers from the CSV file.
      *
-     * @return A list containing the loaded customers.
+     * @return A list containing the loaded customers, or an empty list if the
+     * file does not exist.
+     * @throws PersistenceException if the file exists but cannot be read.
      */
     public List<Customer> loadCustomer() {
         List<Customer> customers = new ArrayList<>();
+        if (!Files.exists(Path.of(customerCSV))) {
+            return customers;
+        }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(customerCSV))) {
             String line;
@@ -72,15 +87,18 @@ public class PersonRepository {
             }
             System.out.println("Data successfully loaded from " + customerCSV);
         } catch (IOException e) {
-            System.err.println("The file could not be read: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error de lectura: no se pudieron cargar los clientes desde " + customerCSV, e);
         }
 
         return customers;
     }
+
     /**
      * Saves a list of sellers to the CSV file.
      *
      * @param sellers The list of sellers to save.
+     * @throws PersistenceException if the file cannot be written.
      */
     public void saveSeller(List<Seller> sellers) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(sellerCSV))) {
@@ -90,16 +108,23 @@ public class PersonRepository {
             }
             System.out.println("Sellers saved successfully in " + sellerCSV);
         } catch (IOException e) {
-            System.err.println("Error saving the CSV file: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error de escritura: no se pudieron guardar los vendedores en " + sellerCSV, e);
         }
     }
+
     /**
      * Loads a list of sellers from the CSV file.
      *
-     * @return A list containing the loaded sellers.
+     * @return A list containing the loaded sellers, or an empty list if the
+     * file does not exist.
+     * @throws PersistenceException if the file exists but cannot be read.
      */
     public List<Seller> loadSeller() {
         List<Seller> sellers = new ArrayList<>();
+        if (!Files.exists(Path.of(sellerCSV))) {
+            return sellers;
+        }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(sellerCSV))) {
             String line;
@@ -118,16 +143,19 @@ public class PersonRepository {
             }
             System.out.println("Data successfully loaded from " + sellerCSV);
         } catch (IOException e) {
-            System.err.println("The file could not be read: " + e.getMessage());
+            throw new PersistenceException(
+                    "Error de lectura: no se pudieron cargar los vendedores desde " + sellerCSV, e);
         }
 
         return sellers;
     }
+
     /**
      * Deletes a seller matching the given ID from the list and updates the storage.
      *
      * @param sellers The current list of sellers.
      * @param id      The identification of the seller to delete.
+     * @throws PersistenceException if the updated list cannot be written.
      */
     public void deleteSeller(List<Seller> sellers,String id){
         for (Seller s:sellers){
@@ -136,11 +164,13 @@ public class PersonRepository {
             break;
         }
     }
+
     /**
      * Deletes a customer matching the given ID from the list and updates the storage.
      *
      * @param customers The current list of customers.
      * @param id        The identification of the customer to delete.
+     * @throws PersistenceException if the updated list cannot be written.
      */
     public void deleteCustomer(List<Customer> customers,String id){
         for(Customer c:customers){
@@ -149,4 +179,3 @@ public class PersonRepository {
         }
     }
 }
-

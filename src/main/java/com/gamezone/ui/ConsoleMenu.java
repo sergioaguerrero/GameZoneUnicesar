@@ -1,5 +1,9 @@
 package com.gamezone.ui;
 
+import com.gamezone.exceptions.BusinessRuleException;
+import com.gamezone.exceptions.InvalidDataException;
+import com.gamezone.exceptions.PersistenceException;
+import com.gamezone.exceptions.ResourceNotFoundException;
 import com.gamezone.model.Accessory;
 import com.gamezone.model.Cable;
 import com.gamezone.model.Console;
@@ -165,6 +169,11 @@ public class ConsoleMenu {
         }
     }
 
+    /**
+     * Prompts the user for video game attributes, registers the video game in
+     * {@link ProductService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerVideoGame() {
         String id = readRequiredText("ID: ");
         if (productService.findById(id).isPresent()) {
@@ -181,11 +190,22 @@ public class ConsoleMenu {
             VideoGame videoGame = productService.registerVideoGame(id, title, price, stock,
                     platform, genre, ageRating);
             System.out.println("Videojuego registrado exitosamente: " + videoGame.getFullDescription());
-        } catch (RuntimeException e) {
-            System.out.println("Error al registrar el videojuego: " + e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
         }
     }
 
+    /**
+     * Prompts the user for console attributes, registers the console in
+     * {@link ProductService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerConsole() {
         String id = readRequiredText("ID: ");
         if (productService.findById(id).isPresent()) {
@@ -202,8 +222,14 @@ public class ConsoleMenu {
             Console console = productService.registerConsole(id, title, price, stock,
                     brand, model, generation);
             System.out.println("Consola registrada exitosamente: " + console.getFullDescription());
-        } catch (RuntimeException e) {
-            System.out.println("Error al registrar la consola: " + e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
         }
     }
 
@@ -276,6 +302,11 @@ public class ConsoleMenu {
         System.out.println(product.get().getFullDescription());
     }
 
+    /**
+     * Prompts the user for updated product attributes, updates the product via
+     * {@link ProductService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void updateProduct() {
         String id = readRequiredText("ID del producto a actualizar: ");
         if (productService.findById(id).isEmpty()) {
@@ -285,16 +316,41 @@ public class ConsoleMenu {
         String title = readRequiredText("Nuevo título: ");
         double price = readPositiveDouble("Nuevo precio: ");
         int stock = readNonNegativeInt("Nuevo stock: ");
-        boolean updated = productService.updateProduct(id, title, price, stock);
-        System.out.println(updated ? "Producto actualizado exitosamente."
-                : "No se encontró ningún producto con ese ID.");
+        try {
+            boolean updated = productService.updateProduct(id, title, price, stock);
+            System.out.println(updated ? "Producto actualizado exitosamente."
+                    : "No se encontró ningún producto con ese ID.");
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
+        }
     }
 
+    /**
+     * Prompts the user for a product ID, deletes the product via
+     * {@link ProductService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void deleteProduct() {
         String id = readRequiredText("ID del producto a eliminar: ");
-        boolean deleted = productService.deleteProduct(id);
-        System.out.println(deleted ? "Producto eliminado exitosamente."
-                : "No se encontró ningún producto con ese ID.");
+        try {
+            boolean deleted = productService.deleteProduct(id);
+            System.out.println(deleted ? "Producto eliminado exitosamente."
+                    : "No se encontró ningún producto con ese ID.");
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
+        }
     }
 
     // ---------------------------------------------------------------
@@ -343,6 +399,11 @@ public class ConsoleMenu {
         }
     }
 
+    /**
+     * Prompts the user for customer details, registers the customer via
+     * {@link PersonService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerCustomer() {
         String id = readRequiredText("ID: ");
         if (personService.findCustomer(id) != null) {
@@ -352,10 +413,25 @@ public class ConsoleMenu {
         String name = readRequiredText("Nombre completo: ");
         String phone = readRequiredText("Teléfono: ");
         String mail = readRequiredEmail("Correo electrónico: ");
-        personService.registerCustomer(name, phone, id, mail);
-        System.out.println("Cliente registrado exitosamente.");
+        try {
+            personService.registerCustomer(name, phone, id, mail);
+            System.out.println("Cliente registrado exitosamente.");
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
+        }
     }
 
+    /**
+     * Prompts the user for seller details, registers the seller via
+     * {@link PersonService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerSeller() {
         String id = readRequiredText("ID: ");
         if (personService.findSeller(id) != null) {
@@ -366,8 +442,18 @@ public class ConsoleMenu {
         String phone = readRequiredText("Teléfono: ");
         String employeeCode = readRequiredText("Código de empleado: ");
         String workShift = readRequiredText("Turno de trabajo: ");
-        personService.registerSeller(name, phone, id, employeeCode, workShift);
-        System.out.println("Vendedor registrado exitosamente.");
+        try {
+            personService.registerSeller(name, phone, id, employeeCode, workShift);
+            System.out.println("Vendedor registrado exitosamente.");
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
+        }
     }
 
     private void listAllCustomers() {
@@ -458,6 +544,11 @@ public class ConsoleMenu {
         }
     }
 
+    /**
+     * Prompts the user for sale details and items, registers the sale via
+     * {@link SaleService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerSale() {
         String customerId = readRequiredText("ID del cliente: ");
         if (personService.findCustomer(customerId) == null) {
@@ -491,16 +582,26 @@ public class ConsoleMenu {
             }
         }
 
-        boolean registered = saleService.registerSale(customerId, sellerId, items, consolesWithExtendedWarranty);
-        if (!registered) {
-            System.out.println("No se pudo registrar la venta. Verifique los datos ingresados.");
-            return;
+        try {
+            boolean registered = saleService.registerSale(customerId, sellerId, items, consolesWithExtendedWarranty);
+            if (!registered) {
+                System.out.println("No se pudo registrar la venta. Verifique los datos ingresados.");
+                return;
+            }
+            List<Sale> allSales = saleService.listAllSales();
+            Sale lastSale = allSales.get(allSales.size() - 1);
+            System.out.println("Venta registrada. Recibo:");
+            System.out.println(formatSaleReceipt(lastSale));
+            System.out.println("ID de la venta (úselo para consultar garantías): " + lastSale.getId());
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
         }
-        List<Sale> allSales = saleService.listAllSales();
-        Sale lastSale = allSales.get(allSales.size() - 1);
-        System.out.println("Venta registrada. Recibo:");
-        System.out.println(formatSaleReceipt(lastSale));
-        System.out.println("ID de la venta (úselo para consultar garantías): " + lastSale.getId());
     }
 
     /**
@@ -819,6 +920,11 @@ public class ConsoleMenu {
         }
     }
 
+    /**
+     * Prompts the user for controller attributes, registers the controller via
+     * {@link AccessoryService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerController() {
         String id = readRequiredText("ID: ");
         if (accessoryService.findById(id).isPresent()) {
@@ -833,11 +939,22 @@ public class ConsoleMenu {
             Controller controller = accessoryService.registerController(id, title, price, stock,
                     connectionType);
             System.out.println("Control registrado exitosamente: " + controller.getFullDescription());
-        } catch (RuntimeException e) {
-            System.out.println("Error al registrar el control: " + e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
         }
     }
 
+    /**
+     * Prompts the user for cable attributes, registers the cable via
+     * {@link AccessoryService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerCable() {
         String id = readRequiredText("ID: ");
         if (accessoryService.findById(id).isPresent()) {
@@ -852,11 +969,22 @@ public class ConsoleMenu {
         try {
             Cable cable = accessoryService.registerCable(id, title, price, stock, length, connectorType);
             System.out.println("Cable registrado exitosamente: " + cable.getFullDescription());
-        } catch (RuntimeException e) {
-            System.out.println("Error al registrar el cable: " + e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
         }
     }
 
+    /**
+     * Prompts the user for memory attributes, registers the memory via
+     * {@link AccessoryService}, and handles domain, validation, and persistence exceptions
+     * displaying descriptive Spanish messages without exposing technical stack traces.
+     */
     private void registerMemory() {
         String id = readRequiredText("ID: ");
         if (accessoryService.findById(id).isPresent()) {
@@ -872,8 +1000,14 @@ public class ConsoleMenu {
             Memory memory = accessoryService.registerMemory(id, title, price, stock,
                     capacityGB, memoryType);
             System.out.println("Memoria registrada exitosamente: " + memory.getFullDescription());
-        } catch (RuntimeException e) {
-            System.out.println("Error al registrar la memoria: " + e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
         }
     }
 
@@ -989,6 +1123,12 @@ public class ConsoleMenu {
         }
     }
 
+    /**
+     * Prompts the user for return information, registers the return via
+     * {@link ReturnService}, and handles domain, validation, and persistence exceptions
+     * using multiple catch blocks to display descriptive Spanish messages without
+     * exposing raw exception stack traces.
+     */
     private void registerReturn() {
         String saleId = readRequiredText("Identificador de la venta original: ");
         int count = readPositiveInt("Cantidad de productos a devolver: ");
@@ -1003,8 +1143,14 @@ public class ConsoleMenu {
             com.gamezone.model.Return ret = returnService.registerReturn(saleId, productIds, reason);
             System.out.println("Devolución registrada exitosamente.");
             System.out.println(ret.generateReturnReceipt());
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error al procesar la devolución: " + e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            System.out.println("No se encontró el recurso solicitado: " + e.getMessage());
+        } catch (BusinessRuleException e) {
+            System.out.println("No se puede completar la operación: " + e.getMessage());
+        } catch (InvalidDataException e) {
+            System.out.println("Los datos ingresados no son válidos: " + e.getMessage());
+        } catch (PersistenceException e) {
+            System.out.println("Ocurrió un problema al acceder a los datos del sistema. Contacte al administrador.");
         }
     }
 
