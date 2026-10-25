@@ -14,6 +14,8 @@
 6. `WarrantyRepository`, `WarrantyRepository`
 
 7. `ProductService`
+
+8. `PersonService`
 ***
 # 2. GRASP Audit - Person Module
 
@@ -657,3 +659,102 @@ None found in these classes.
 
 ***
 
+# 9. GRASP Audit - Person Module (Extended Services)
+
+**Classes audited:** `PersonService`, `PersonValidator`, `Customer`, `Seller`  
+**Module:** Person Module
+
+## Verdict by pattern
+
+| Pattern | Verdict | Note |
+|---|---|---|
+| Information Expert | Correct | `PersonService` manages domain lists and delegates field validations to `PersonValidator`. |
+| Creator | Correct | `PersonService` creates instances of `Customer` and `Seller` using accessible initialization data. |
+| Controller | Not applicable | No class in this section receives system events. |
+| Low Coupling | Violation (V-22) | `PersonService` is tightly coupled to concrete static validation routines in `PersonValidator`. |
+| High Cohesion | Correct | Responsibilities are separated between entity registration, validation, and retrieval routines. |
+| Polymorphism | Correct | Distinct registration paths exist for `Customer` and `Seller` without using conditional type checks. |
+| Pure Fabrication | Correct | `PersonValidator` isolates validation logic from domain model objects. |
+| Indirection | Correct | `PersonService` acts as an intermediate coordinator between caller interfaces and storage repositories. |
+| Protected Variations | Violation (V-23) | Searching methods rely on returning nullable values directly into external validation routines. |
+
+---
+
+## Violations
+
+### V-22
+
+- **ID:** V-22
+- **Pattern:** Low Coupling
+- **Module:** Person Module (`service`)
+- **Evidence:** `PersonService.registerCustomer`, `registerSeller`, `getSellerOrThrow`, and `getCustomerOrThrow`:
+  ```java
+  PersonValidator.validatePersonData(id, name, mail, phone);
+  PersonValidator.validateUniquePerson(customers, id);
+  ...
+  PersonValidator.validatePersonExists(seller, id);
+  ```
+- **Explanation:** `PersonService` invokes static validation methods directly on `PersonValidator`. Static dependencies increase coupling, preventing callers from injecting alternative validation strategies or substituting mock validators in unit tests.
+- **Consequence:** Changing validation behavior or testing registration logic independently from `PersonValidator` requires refactoring hardcoded static class references.
+- **Proposed solution:** Inject an instance-based validator or strategy interface into `PersonService` to decouple validation implementations from service execution.
+- **Other developer's code:** No.
+
+### V-23
+
+- **ID:** V-23
+- **Pattern:** Protected Variations
+- **Module:** Person Module (`service`)
+- **Evidence:** `PersonService.getSellerOrThrow` and `getCustomerOrThrow`:
+  ```java
+  public Seller getSellerOrThrow(String id) {
+      Seller seller = findSeller(id);
+      PersonValidator.validatePersonExists(seller, id);
+      return seller;
+  }
+
+  public Customer getCustomerOrThrow(String id) {
+      Customer customer = findCustomer(id);
+      PersonValidator.validatePersonExists(customer, id);
+      return customer;
+  }
+  ```
+- **Explanation:** `PersonService` retrieves potentially `null` entities via `findSeller(id)` and `findCustomer(id)` and passes them directly into external static validation calls instead of handling optional state safely within the domain lookup logic.
+- **Consequence:** Bypassing `Optional` handling exposes the execution flow to unsafe reference handling and unhandled `NullPointerException` risks if validation order is altered.
+- **Proposed solution:** Modify `findSeller` and `findCustomer` to return `Optional<T>` and leverage `.orElseThrow()` directly inside the lookup methods.
+- **Other developer's code:** No.
+
+---
+
+## Functional defects (not corrected in this requirement)
+
+### FD-11
+
+- **Evidence:** `PersonService.registerSeller`:
+  ```java
+  public void registerSeller(String name, String phone, String id,
+                             String employeeCode, String workShift) {
+      PersonValidator.validatePersonData(id, name, null, phone);
+      PersonValidator.validateUniquePerson(sellers, id);
+
+      Seller seller = new Seller(name, phone, id, employeeCode, workShift);
+      sellers.add(seller);
+      repository.saveSeller(sellers);
+  }
+  ```
+- **Observed behavior:** `registerSeller` passes `null` for the email parameter in `PersonValidator.validatePersonData(id, name, null, phone)`. If `PersonValidator` checks for email format or presence without null checks, seller registration throws an unhandled exception; additionally, specific seller attributes (`employeeCode`, `workShift`) are entirely unvalidated prior to entity creation.
+- **Expected behavior:** Specific attributes (`employeeCode`, `workShift`) should undergo explicit validation, and email checks should gracefully handle optional parameters for non-customer entities.
+- **Not corrected because:** Adding extra validation checks for seller attributes alters current exception-throwing guarantees and observable registration output.
+
+### FD-12
+
+- **Evidence:** `PersonService.registerCustomer` and `registerSeller`:
+  ```java
+  PersonValidator.validateUniquePerson(customers, id);
+  ...
+  PersonValidator.validateUniquePerson(sellers, id);
+  ```
+- **Observed behavior:** Uniqueness checks validate `id` independently within `customers` and `sellers` collections. A user can register a `Customer` and a `Seller` sharing the exact same `id`, leading to potential identifier collisions across the system.
+- **Expected behavior:** Entity `id` uniqueness should be enforced globally across all person records (`customers` and `sellers`).
+- **Not corrected because:** Enforcing cross-collection uniqueness changes observable validation behavior for multi-role registration scenarios.
+
+***
