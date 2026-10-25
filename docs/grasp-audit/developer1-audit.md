@@ -101,4 +101,125 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 6. High Cohesion
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `Product` and subclasses | Hold product data and stock rules only. |
+| `ProductRepository` | Handles only CSV persistence. |
+| Promotion and warranty subclasses | Each one holds a single rule. |
+| `Return.generateReturnReceipt`, `Warranty.generateWarrantyCertificate` | Assigned to these classes by Req. 3, Req. 4 and A5; they use only their own data. |
+ 
+---
+
+## 7. Polymorphism
+ 
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-03, V-04 |
+ 
+**Correctly applied**
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `Product.getFullDescription` | Abstract, implemented by each product. |
+| `Promotion.calculateDiscount` | Abstract, implemented by each discount. |
+| `Warranty.getDurationInMonths`, `getAdditionalCost` | Abstract, implemented by each warranty. |
+| `Accessory.getAccessoryType` | Abstract, implemented by each accessory. |
+ 
+**Violations**
+ 
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-03 | Promotions (Req. 2), A1 | `CategoryDiscount.belongsToTargetCategory`, lines 129–137: `product instanceof VideoGame` / `Console` / `Accessory` | The category depends on the product type but is resolved with conditionals. Also affects Low Coupling and Protected Variations. | A new product type requires editing `CategoryDiscount` (already happened in A1). | Abstract `Product.getCategory()` implemented in `VideoGame`, `Console` and `Accessory`. | No |
+| V-04 | Products (Workshop 1) | `ProductRepository.toCsvLine`, lines 86–109 (`instanceof`); `fromCsvLine`, lines 121–137 (`VIDEOGAME_TYPE.equals(type)`) | The CSV format varies by type but is chosen with conditionals. | A new product type requires editing both methods; a miss fails only at runtime. | Interface `ProductCsvMapper` with one mapper per type, selected by `getCategory()`. Depends on V-03. | No |
+ 
+---
+
+## 8. Pure Fabrication
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `ProductRepository` | Invented class for file persistence; keeps the model free of I/O. |
+| `ProductValidator`, `PersonValidator`, `SaleValidator` | Invented classes for validation rules; keep services focused on business flow. |
+ 
+---
+
+## 9. Indirection
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `ProductService` | Sits between `ConsoleMenu` and `ProductRepository`. |
+| `Promotion` (abstract) | Sits between `SaleService` and the concrete discounts. |
+| `GameZoneException` | Lets `ConsoleMenu` handle four error categories instead of low-level exceptions. |
+ 
+---
+
+## 10. Protected Variations
+ 
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-05, V-06, V-07 |
+ 
+**Correctly applied**
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `Product`, `Accessory`, `Promotion`, `Warranty` (abstract) | Protect the system from new subtypes. |
+| `BasicWarranty`, `ExtendedWarranty` | Durations and cost are named constants. |
+ 
+**Violations**
+ 
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-05 | Promotions (Req. 2) | `setPercentage` with `percentage < 0 \|\| percentage > 100` in `PercentageDiscount` (lines 46–51), `CategoryDiscount` (68–73), `BulkPurchaseDiscount` (73–78) | One business rule copied in three classes. | Changing the allowed range requires editing three places. | Abstract class `PercentageBasedPromotion` with the field and its validation. | No |
+| V-06 | Returns (Req. 3) | `Sale.canBeReturned`, lines 224–227: `daysSinceSale <= 30` with `LocalDate.now()` | The 30-day policy is a magic number and the reference date is fixed. | Changing the policy or testing with a fixed date requires editing the method. | Constant `RETURN_PERIOD_DAYS` and overload `canBeReturned(LocalDate)`. | No (method by Developer 1 in shared `Sale.java`) |
+| V-07 | Exceptions (Req. 6) | `ResourceNotFoundException.buildMessage`, lines 55–62: `type.endsWith("a")` | Grammatical gender is guessed instead of declared. | "promoción" or "devolución" would print "El promoción … no fue encontrado". | Enum `ResourceType` with article and participle per type. | No |
+ 
+---
+
+## 11. Problems reported to the Technical Lead
+ 
+Observed while auditing; the code belongs to another member, so it is not audited here.
+ 
+| # | Location | Observation | Classification |
+|---|---|---|---|
+| R-1 | `SaleService` lines 214, 260, 312, 334; `ConsoleMenu` 257, 280, 577; `ReturnService` 169; `ReturnRepository` 114 | `instanceof` on product types; can use `getCategory()` after V-03. | Boundary, Polymorphism |
+| R-2 | `WarrantyService.cancelWarranties`, line 157 | `instanceof ExtendedWarranty` is unnecessary: `BasicWarranty.getAdditionalCost()` returns 0. | Polymorphism (Developer 2) |
+| R-3 | `AccessoryService.findAccessoriesCompatibleWith`, line 133 | Compares accessory type with a console id: always returns an empty list. | Out of scope (functional defect) |
+| R-4 | `AccessoryRepository` | Compatible consoles are never saved to `accessories.csv`. | Out of scope (functional defect) |
+ 
+---
+
+## 12. Summary of verdicts
+ 
+| Pattern | Verdict | Violations |
+|---|---|---|
+| Information Expert | Violation | V-01, V-02 |
+| Creator | Correct | — |
+| Controller | Correct | — |
+| Low Coupling | Violation | V-03 |
+| High Cohesion | Correct | — |
+| Polymorphism | Violation | V-03, V-04 |
+| Pure Fabrication | Correct | — |
+| Indirection | Correct | — |
+| Protected Variations | Violation | V-05, V-06, V-07 |
+ 
+| Item | Detail |
+|---|---|
+| Boundary violations | V-01, V-02: the Technical Lead adds the methods to `Sale`. |
+| Suggested order | V-03 → V-04 → V-05 → V-06 → V-07 → V-01, V-02 (after `Sale` is updated). |
+
 
