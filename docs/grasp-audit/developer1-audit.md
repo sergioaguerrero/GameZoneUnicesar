@@ -7,7 +7,7 @@
  
 The scope follows the responsibility table of the requirement and the authorship recorded in `TEAM.md` and in the commit history (`git blame` on `develop`).
  
-### 1.1 Classes and methods audited
+### 1.1 Classes and methods audited 
  
 | Module (requirement) | Class | Methods / members audited |
 |---|---|---|
@@ -35,3 +35,28 @@ The scope follows the responsibility table of the requirement and the authorship
 | `Return.calculateRefundAmount(double)` and the `final` modifiers of `Return` fields | Jhonatan Galindo (`310f1eb`, A7) | Developer 2 |
 | Calls to `ProductValidator` in `ProductService` and the `PersistenceException` handling in `ProductRepository` | Jhonatan Galindo (`7a1008b`, `d2d6af5`, Req. 6) | Developer 2 (use of exceptions and validators in services and repositories) |
  
+---
+ 
+## 2. Information Expert
+ 
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-01, V-02 |
+ 
+**Correctly applied**
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `Product.hasEnoughStock`, `decreaseStock` | The product owns its stock. |
+| `Promotion.isActive`, `Warranty.isActive` | Each object owns its start and end dates. |
+| `ExtendedWarranty.getAdditionalCost` | The warranty owns its cost rule. |
+| `Sale.canBeReturned` | The sale owns its date. |
+ 
+**Violations**
+ 
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-01 | Returns (Req. 3), A5 | `Return.calculateItemRefund`, lines 167–170: `originalSale.getDiscountAmount() / subtotal` | Subtotal and discount belong to `Sale`, but `Return` combines them. | Any new feature needing the ratio will copy the formula. | Add `Sale.getDiscountRatio()` and call it from `Return`. | Yes: Technical Lead (`Sale`) |
+| V-02 | Promotions (Req. 2) | `BulkPurchaseDiscount.calculateDiscount`, lines 90–93: loop over `sale.getItems()` adding `getQuantity()` | The total units of a sale is data owned by `Sale`. | The promotion depends on the internal item list of `Sale`. | Add `Sale.getTotalQuantity()` and use it. | Yes: Technical Lead (`Sale`) |
+ 
+---
