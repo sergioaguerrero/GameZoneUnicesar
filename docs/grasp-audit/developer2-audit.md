@@ -3,15 +3,17 @@
 # 1. Scope
 **Classes audited:**
 
-`Person`, `Customer`, `Seller`, `PersonRepository`, `PersonService`
+2. `Person`, `Customer`, `Seller`, `PersonRepository`, `PersonService`
 
-`AccessoryRepository`, `AccessoryService`
+3. `AccessoryRepository`, `AccessoryService`
 
-`PromotionRepository`, `PromotionService`
+4. `PromotionRepository`, `PromotionService`
 
-`ReturnRepository`, `ReturnService`
+5. `ReturnRepository`, `ReturnService`
 
-`WarrantyRepository`, `WarrantyRepository`
+6. `WarrantyRepository`, `WarrantyRepository`
+
+7. `ProductService`
 ***
 # 2. GRASP Audit - Person Module
 
@@ -566,7 +568,92 @@ None found in these classes.
   }
   ```
 - **Observed behavior:** Basic warranties are added to `toCancel` list and deleted, but `getAdditionalCost()` is only added for extended warranties. However, if multiple matching warranties exist, all matching ones are removed without checking if they are currently active or already expired.
-- **Expected behavior:** Only active warranties should be cancelled and refunded.
+- **Expected behavior:** Only active warranties should be canceled and refunded.
 - **Not corrected because:** Changing cancellation logic modifies observable business output for warranty management.
 
 ***
+# 7. GRASP Audit - Product Module
+
+**Classes audited:** `Product`, `Console`, `VideoGame`, `Accessory`, `ProductRepository`, `ProductService`, `ProductValidator`  
+**Module:** Product Module
+
+## Verdict by pattern
+
+| Pattern | Verdict | Note |
+|---|---|---|
+| Information Expert | Correct | `ProductService` delegates field validation to `ProductValidator` and model state checks to `Product`. |
+| Creator | Correct | `ProductService` creates product sub-entities (`Console`, `VideoGame`, `Accessory`) where required data is available. |
+| Controller | Not applicable | No class in the module receives system events. |
+| Low Coupling | Violation (V-20) | `ProductService` delegates validation logic to `ProductValidator` using direct static calls rather than encapsulating or abstracting checks. |
+| High Cohesion | Correct | `ProductService` manages business operations while `ProductRepository` manages file persistence. |
+| Polymorphism | Correct | Product subclasses manage their specific properties without type checking in service methods. |
+| Pure Fabrication | Correct | `ProductValidator` and `ProductRepository` separate validation and persistence concerns from domain models. |
+| Indirection | Correct | `ProductService` acts as an intermediate coordinator between the UI layer and repository/domain models. |
+| Protected Variations | Violation (V-21) | `ProductService.updateStock` relies on `orElse(null)` leading to potential unhandled null propagation before external validation. |
+
+---
+
+## Violations
+
+### V-20
+
+- **ID:** V-20
+- **Pattern:** Low Coupling
+- **Module:** Product Module (`service`)
+- **Evidence:** `ProductService.registerConsole`, `updateStock`, `restoreStock`, and `updateProduct`:
+  ```java
+  ProductValidator.validateProductData(productId, title, price, stockQuantity);
+  ProductValidator.validateProductExists(product, productId);
+  ProductValidator.validateStockAvailability(product, quantity);
+  ```
+- **Explanation:** `ProductService` is tightly coupled to static methods in `ProductValidator`. Calling static validation utilities directly makes it impossible to substitute different validation policies or mock validation logic during isolated unit testing.
+- **Consequence:** Modifying or extending validation rules requires changing static dependencies, creating tight coupling between business orchestrations and specific static helper implementations.
+- **Proposed solution:** Inject a validation strategy interface into `ProductService` or instance-level `ProductValidator` to decouple concrete validation rules from service execution.
+- **Other developer's code:** No.
+
+### V-21
+
+- **ID:** V-21
+- **Pattern:** Protected Variations
+- **Module:** Product Module (`service`)
+- **Evidence:** `ProductService.updateStock` and `restoreStock`:
+  ```java
+  public void updateStock(String productId, int quantity) {
+      Product product = findById(productId).orElse(null);
+      ProductValidator.validateProductExists(product, productId);
+      ...
+  }
+  ```
+- **Explanation:** `ProductService` unpacks an `Optional<Product>` into a potentially `null` reference (`orElse(null)`) and relies on an external utility (`ProductValidator.validateProductExists`) to throw an exception if `null`.
+- **Consequence:** Bypassing `Optional` handling patterns exposes the internal flow to potential `NullPointerException`s if validation checks are refactored, bypassed, or reordered.
+- **Proposed solution:** Handle missing entity instances natively using `findById(productId).orElseThrow(...)` before invoking subsequent logic.
+- **Other developer's code:** No.
+
+---
+
+## Functional defects (not corrected in this requirement)
+
+### FD-09
+
+- **Evidence:** `ProductService.updateProduct`:
+  ```java
+  public boolean updateProduct(String productId, String title, double price, int stockQuantity) {
+      ProductValidator.validateProductData(productId, title, price, stockQuantity);
+      Optional<Product> found = findById(productId);
+      if (found.isEmpty()) {
+          return false;
+      }
+      Product product = found.get();
+      product.setTitle(title);
+      product.setPrice(price);
+      product.setStockQuantity(stockQuantity);
+      persist();
+      return true;
+  }
+  ```
+- **Observed behavior:** When `updateProduct` is called for a non-existent `productId`, `ProductValidator.validateProductData` validates all supplied parameters *before* verifying if the product exists. If invalid parameters are passed for a non-existent product, an `IllegalArgumentException` is thrown instead of returning `false`.
+- **Expected behavior:** The method should consistently check product existence or return `false` without throwing validation errors for entity updates that do not target a valid record.
+- **Not corrected because:** Modifying exception throwing behavior for non-existent product update requests changes observable API contract responses.
+
+***
+
