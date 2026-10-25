@@ -203,4 +203,23 @@ Observed while auditing; the code belongs to another member, so it is not audite
  
 ---
 
+## 12. Summary of verdicts
+ 
+| Pattern | Verdict | Violations |
+|---|---|---|
+| Information Expert | Violation | V-01, V-02 |
+| Creator | Correct | — |
+| Controller | Correct | — |
+| Low Coupling | Violation | V-03 |
+| High Cohesion | Correct | — |
+| Polymorphism | Violation | V-03, V-04 |
+| Pure Fabrication | Correct | — |
+| Indirection | Correct | — |
+| Protected Variations | Violation | V-05, V-06, V-07 |
+ 
+| Item | Detail |
+|---|---|
+| Boundary violations | V-01, V-02: the Technical Lead adds the methods to `Sale`. |
+| Suggested order | V-03 → V-04 → V-05 → V-06 → V-07 → V-01, V-02 (after `Sale` is updated). |
+
 
