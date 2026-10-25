@@ -107,3 +107,55 @@
 * **Problem Posed:** The new promotion evaluation logic needed to be triggered during a sale, applying the best possible discount to the total without cluttering the UI layer or violating the separation of concerns established in Requirement 1.
 * **Suggested Technical Solution:** Planned an additive modification strictly inside `SaleService.registerSale()`. The service orchestrates the process: it calculates the base subtotal, invokes `promotionService.findBestPromotionFor(sale)`, applies the returned discount to the `Sale` object, and finally persists the updated state.
 * **Key Lesson / Application:** Business orchestration strictly belongs in the Service layer. The UI layer should remain completely oblivious to how discounts are calculated or compared; it should simply request the sale registration and print the resulting receipt.
+
+
+---
+
+# AI-USAGE: Requirement 7 — GRASP Audit and Correction (Phase 1)
+
+**Student:** Sergio Guerrero  
+**Role:** Technical Lead  
+**Module:** Sales + UI + Main (System Integration)  
+**Tool used:** Antigravity AI (Gemini 3.8 Flash)  
+**Scope:** Phase 1 — GRASP Audit, Guiding Questions analysis, and Audit Consolidation
+
+---
+
+## 1. GRASP Evaluation Framework and Classification Taxonomy
+
+* **Problem Posed:** Needed to establish clear, objective evaluation criteria across the nine GRASP patterns (Information Expert, Creator, Controller, Low Coupling, High Cohesion, Polymorphism, Pure Fabrication, Indirection, Protected Variations) to evaluate Technical Lead responsibilities (`Sale`, `SaleRepository`, `SaleService`, `ConsoleMenu`, `Main`, `restoreStock`) and integrate teammate reports without subjective ambiguity.
+* **Suggested Technical Solution:** Defined structured verdict criteria:
+  - *Violation:* Code directly breaching the core question of the pattern (e.g., procedural `instanceof` branching, repositories doing console printing, services swallowing exceptions).
+  - *Correct:* The class adheres cleanly to the pattern without leakage of concern.
+  - *Not Applicable:* Architectural pattern has no semantic relevance in that specific layer (e.g., models do not receive UI system events, so Controller does not apply).
+  Required every finding to record ID, Pattern, Module, exact lines of evidence on the `develop` baseline (`cdf4438`), explanation, consequence, proposed solution, and cross-member assignments.
+* **Key Lesson / Application:** Rigorous taxonomy prevents false positives and ensures traceability. Patterns like Pure Fabrication and Indirection must not be flagged as violations when they intentionally preserve High Cohesion and Low Coupling.
+
+---
+
+## 2. Multi-Class Boundary Violations and Responsibility Assignment
+
+* **Problem Posed:** How to formalize violations that cross ownership boundaries (such as Developer 1's `Return` and `BulkPurchaseDiscount` accessing calculations that belong to `Sale`, or multiple modules branching on `product instanceof VideoGame / Console / Accessory`) without duplicating work or creating merge collisions.
+* **Suggested Technical Solution:**
+  1. For Information Expert violations against `Sale`: agreed that the Technical Lead implements domain query methods in `Sale` (`getDiscountRatio()`, `getTotalQuantity()`), enabling Developer 1 to consume them cleanly.
+  2. For Polymorphism violations across `CategoryDiscount`, `SaleService`, `ConsoleMenu`, and `ReturnService`: agreed that Developer 1 introduces `Product.getCategory()`, and the Technical Lead refactors `SaleService` and `ConsoleMenu` while Developer 2 refactors `ReturnService`.
+* **Key Lesson / Application:** Cross-cutting refactorings require identifying the "provider" vs. "consumer" hierarchy. The provider of the core abstraction must implement the foundational API first so dependent collaborators can integrate smoothly.
+
+---
+
+## 3. High Cohesion in Layered Boundaries: Persistence vs. Presentation
+
+* **Problem Posed:** Audit of `SaleRepository` and `SaleService` revealed calls to `System.out.println` and `System.err.println`, with `SaleService.registerSale` catching and suppressing typed validation exceptions (`InvalidDataException`, `BusinessRuleException`).
+* **Suggested Technical Solution:**
+  1. Identified that persistence repositories must purely handle I/O and throw `PersistenceException`. Console printing inside `SaleRepository` violates High Cohesion.
+  2. Identified that swallowing exceptions in `SaleService` prevents `ConsoleMenu` from utilizing its differentiated exception handlers (lines 596–604).
+  3. Formulated the refactoring plan: remove all console output from the persistence and service layers, and let domain exceptions propagate up to `ConsoleMenu` where localized, user-friendly Spanish feedback is rendered.
+* **Key Lesson / Application:** Pure Fabrication components (repositories) and use-case controllers (services) should never depend on or target a specific UI channel like the console. Exception propagation preserves high cohesion and decouples business logic from presentation.
+
+---
+
+## 4. Audit Coverage Verification and Consolidation Protocol
+
+* **Problem Posed:** As Technical Lead, needed to verify that 100% of codebase classes are audited exactly once without gaps or overlaps across the three team members' individual reports.
+* **Suggested Technical Solution:** Cross-referenced every Java file in `src/main/java` against `leader-audit.md`, `developer1-audit.md`, and `developer2-audit.md`. Mapped out shared classes with split methods (`Sale`, `ProductService`, `WarrantyService`) so that specific methods (`canBeReturned`, `restoreStock`, `get/setWarranties`) had clearly documented individual owners. Compiled the definitive 21 violations into `consolidated-audit.md` with unique IDs `V-01` through `V-21`, separating deferred functional defects into an out-of-scope log.
+* **Key Lesson / Application:** A consolidated audit requires systematic cross-verification of file ownership, preventing duplicate tracking while establishing a single source of truth for the subsequent refactoring phase.
