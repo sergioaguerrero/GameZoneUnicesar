@@ -190,4 +190,17 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 11. Problems reported to the Technical Lead
+ 
+Observed while auditing; the code belongs to another member, so it is not audited here.
+ 
+| # | Location | Observation | Classification |
+|---|---|---|---|
+| R-1 | `SaleService` lines 214, 260, 312, 334; `ConsoleMenu` 257, 280, 577; `ReturnService` 169; `ReturnRepository` 114 | `instanceof` on product types; can use `getCategory()` after V-03. | Boundary, Polymorphism |
+| R-2 | `WarrantyService.cancelWarranties`, line 157 | `instanceof ExtendedWarranty` is unnecessary: `BasicWarranty.getAdditionalCost()` returns 0. | Polymorphism (Developer 2) |
+| R-3 | `AccessoryService.findAccessoriesCompatibleWith`, line 133 | Compares accessory type with a console id: always returns an empty list. | Out of scope (functional defect) |
+| R-4 | `AccessoryRepository` | Compatible consoles are never saved to `accessories.csv`. | Out of scope (functional defect) |
+ 
+---
+
 
