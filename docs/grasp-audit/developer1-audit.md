@@ -116,4 +116,28 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 7. Polymorphism
+ 
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-03, V-04 |
+ 
+**Correctly applied**
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `Product.getFullDescription` | Abstract, implemented by each product. |
+| `Promotion.calculateDiscount` | Abstract, implemented by each discount. |
+| `Warranty.getDurationInMonths`, `getAdditionalCost` | Abstract, implemented by each warranty. |
+| `Accessory.getAccessoryType` | Abstract, implemented by each accessory. |
+ 
+**Violations**
+ 
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-03 | Promotions (Req. 2), A1 | `CategoryDiscount.belongsToTargetCategory`, lines 129–137: `product instanceof VideoGame` / `Console` / `Accessory` | The category depends on the product type but is resolved with conditionals. Also affects Low Coupling and Protected Variations. | A new product type requires editing `CategoryDiscount` (already happened in A1). | Abstract `Product.getCategory()` implemented in `VideoGame`, `Console` and `Accessory`. | No |
+| V-04 | Products (Workshop 1) | `ProductRepository.toCsvLine`, lines 86–109 (`instanceof`); `fromCsvLine`, lines 121–137 (`VIDEOGAME_TYPE.equals(type)`) | The CSV format varies by type but is chosen with conditionals. | A new product type requires editing both methods; a miss fails only at runtime. | Interface `ProductCsvMapper` with one mapper per type, selected by `getCategory()`. Depends on V-03. | No |
+ 
+---
+
 
