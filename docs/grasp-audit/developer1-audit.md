@@ -140,4 +140,17 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 8. Pure Fabrication
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `ProductRepository` | Invented class for file persistence; keeps the model free of I/O. |
+| `ProductValidator`, `PersonValidator`, `SaleValidator` | Invented classes for validation rules; keep services focused on business flow. |
+ 
+---
+
 
