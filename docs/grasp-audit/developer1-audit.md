@@ -153,4 +153,18 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 9. Indirection
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `ProductService` | Sits between `ConsoleMenu` and `ProductRepository`. |
+| `Promotion` (abstract) | Sits between `SaleService` and the concrete discounts. |
+| `GameZoneException` | Lets `ConsoleMenu` handle four error categories instead of low-level exceptions. |
+ 
+---
+
 
