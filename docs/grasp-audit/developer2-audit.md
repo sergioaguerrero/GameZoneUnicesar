@@ -36,7 +36,7 @@
 
 - **ID:** V-01
 - **Pattern:** Protected Variations
-- **Module:** Person Module
+- **Module:** Person Module model `model`
 - **Evidence:** `Customer`, constructor and getter:
   ```java
   this.purchaseHistory = purchaseHistory;
@@ -80,7 +80,7 @@
 
 - **ID:** V-04
 - **Pattern:** High Cohesion
-- **Module:** Person Module
+- **Module:** Person Module in `model`
 - **Evidence:** `PersonRepository.saveCustomer` and `loadCustomer` (the same in `saveSeller` and `loadSeller`):
   ```java
   System.out.println("Customers saved successfully in " + customerCSV);
@@ -228,6 +228,7 @@
 # 4. GRASP Audit — Promotion Module
 
 **Classes audited:** `PromotionRepository`, `PromotionService`
+**Module:** `persistence`, `service`
 
 ## Verdict by pattern
 
@@ -285,4 +286,117 @@
 ## Functional defects (not corrected in this requirement)
 
 None found in these classes.
+
+---
+
+# 5. GRASP Audit — Return Service and Persistence
+
+**Classes audited:** `ReturnRepository`, `ReturnService`
+**Module:** `persistence`, `service`
+
+## Verdict by pattern
+
+| Pattern | Verdict | Note |
+|---|---|---|
+| Information Expert | Correct | The service works on the returns list it owns; the repository converts data it receives. |
+| Creator | Correct | The service creates each return from parameters; the repository creates them from CSV data. |
+| Controller | Not applicable | Neither class receives system events. |
+| Low Coupling | Correct | Both classes depend only on the model and required services/repositories. |
+| High Cohesion | Violation (V-12) | `ReturnService` prints messages directly to the console. |
+| Polymorphism | Violation (V-13) | `ReturnService` checks product types with `instanceof` to restore stock. |
+| Pure Fabrication | Correct | The repository and service keep persistence and business rules out of the model. |
+| Indirection | Violation (V-14) | `ReturnService` depends on the concrete CSV repository. |
+| Protected Variations | Violation (V-11) | `viewAllReturns` returns the internal list directly, allowing external modification. |
+
+---
+
+## Violations
+
+### V-11
+
+- **ID:** V-11
+- **Pattern:** Protected Variations
+- **Module:** `service`
+- **Evidence:** `ReturnService`:
+  ```java
+  public List<Return> viewAllReturns(){
+      return returns;
+  }
+  ```
+- **Explanation:** The internal list of returns is returned directly without copying or wrapping, allowing callers to modify it without using service methods.
+- **Consequence:** Business invariants or auditing rules on returns can be bypassed by external callers modifying the list.
+- **Proposed solution:** Return an unmodifiable view or a copy of the list (e.g., `Collections.unmodifiableList(returns)` or `new ArrayList<>(returns)`).
+- **Other developer's code:** To be confirmed (callers of `viewAllReturns()`).
+
+### V-12
+
+- **ID:** V-12
+- **Pattern:** High Cohesion
+- **Module:** `service`
+- **Evidence:** `ReturnService.registerReturn`:
+  ```java
+  System.out.println("Devolución registrada exitosamente.");
+  ```
+- **Explanation:** A business service class performs console printing, mixing business logic with user interface responsibilities.
+- **Consequence:** Hardcodes console output, making it difficult to adapt the application to graphical or web interfaces without modifying the service.
+- **Proposed solution:** Remove the `System.out.println` from the service layer and handle user feedback in the UI layer.
+- **Other developer's code:** Yes. Console UI or controllers expecting printed feedback.
+
+### V-13
+
+- **ID:** V-13
+- **Pattern:** Polymorphism
+- **Module:** `service`
+- **Evidence:** `ReturnService.restoreStockFor`:
+  ```java
+  if (product instanceof Accessory) {
+      accessoryService.restoreStock(product.getProductId(), quantity);
+  } else {
+      productService.restoreStock(product.getProductId(), quantity);
+  }
+  ```
+- **Explanation:** Stock restoration branches on concrete product types using `instanceof` instead of delegating through polymorphic methods on the `Product` hierarchy.
+- **Consequence:** Adding a new product type requires modifying `ReturnService` to add another conditional branch.
+- **Proposed solution:** Implement a uniform stock restoration method or interface across product types so the service calls it polymorphically without type checks.
+- **Other developer's code:** No.
+
+### V-14
+
+- **ID:** V-14
+- **Pattern:** Indirection
+- **Module:** `service`
+- **Evidence:** `ReturnService`:
+  ```java
+  private final ReturnRepository returnRepository;
+  public ReturnService(ReturnRepository returnRepository, ...)
+  ```
+- **Explanation:** The service depends directly on the concrete CSV repository implementation.
+- **Consequence:** Changing the storage mechanism (e.g., to a relational database) requires modifying `ReturnService`.
+- **Proposed solution:** Introduce a repository interface implemented by `ReturnRepository`, and make `ReturnService` depend on the interface.
+- **Other developer's code:** No.
+
+---
+
+## Functional defects (not corrected in this requirement)
+
+### FD-05
+
+- **Evidence:** `ReturnRepository.saveAll`:
+  ```java
+  throw new RuntimeException("Failed to save promotions to " + FILE_PATH, e);
+  ```
+- **Observed behavior:** The exception message incorrectly mentions "promotions" instead of returns.
+- **Expected behavior:** The error message should accurately reflect that it failed to save returns.
+- **Not corrected because:** the fix changes error messages / string output.
+
+### FD-06
+
+- **Evidence:** `ReturnRepository.fromCsvLine`:
+  ```java
+  List<Sale> sales = saleService.listAllSales();
+  ```
+- **Observed behavior:** During `loadAll()`, for every single CSV line read, `saleService.listAllSales()` is invoked, leading to an $O(N^2)$ performance bottleneck if there are many returns and sales. Furthermore, if a sale ID cannot be found, `fromCsvLine` returns `null` and `loadAll` silently ignores it without warning.
+- **Expected behavior:** Load sales once before processing lines or handle missing sales gracefully with proper logging.
+- **Not corrected because:** the fix alters performance characteristics or data loading flow.
+
 
