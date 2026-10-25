@@ -1,760 +1,266 @@
-# GRASP Audit - Developer 2
-***
-# 1. Scope
-**Classes audited:**
+# GRASP Audit — Developer 2
 
-2. `Person`, `Customer`, `Seller`, `PersonRepository`, `PersonService`
+**Author:** Jhonatan Galindo (Developer 2)
+**Audited branch / commit:** `develop` @ `cdf4438` (*Merge pull request #46 from sergioaguerrero/feature/exception-handling*), the starting point of `feature/grasp-audit`
 
-3. `AccessoryRepository`, `AccessoryService`
+---
 
-4. `PromotionRepository`, `PromotionService`
+## 1. Scope
 
-5. `ReturnRepository`, `ReturnService`
+The scope follows the responsibility table of the requirement and the authorship recorded in `TEAM.md` and in the commit history (`git blame` on `develop`).
 
-6. `WarrantyRepository`, `WarrantyRepository`
+### 1.1 Classes and methods audited
 
-7. `ProductService`
-
-8. `PersonService`
-***
-# 2. GRASP Audit - Person Module
-
-**Classes audited:** `Person`, `Customer`, `Seller`, `PersonRepository`, `PersonService`
-**Module:** Person Module
-
-## Verdict by pattern
-
-| Pattern | Verdict | Note |
+| Module (requirement) | Class | Methods / members audited |
 |---|---|---|
-| Information Expert | Correct | `PersonService` works on the lists it owns and `Customer` manages its own history. |
-| Creator | Correct | `Customer` and `Seller` are created where their data is available (`PersonService.register*`, `PersonRepository.load*`). |
-| Controller | Not applicable | No class in the module receives system events. |
-| Low Coupling | Violation (V-02) | `Customer` and `Sale` reference each other. |
-| High Cohesion | Violation (V-03, V-04) | `PersonRepository` removes elements from lists and prints to the console. |
-| Polymorphism | Correct | No type-based conditionals in the module. |
-| Pure Fabrication | Correct | `PersonRepository` and `PersonService` keep persistence and business rules out of the model. |
-| Indirection | Violation (V-05) | `PersonService` depends on the concrete CSV repository. |
-| Protected Variations | Violation (V-01) | The purchase history list is exposed. `PersonService` already returns read-only lists. |
+| Persons (Workshop 1) | `model.Person`, `model.Customer`, `model.Seller` | all members |
+| Persons (Workshop 1) | `persistence.PersonRepository`, `service.PersonService` | all members |
+| Accessories (Req. 1) | `persistence.AccessoryRepository`, `service.AccessoryService` | all members |
+| Promotions (Req. 2) | `persistence.PromotionRepository`, `service.PromotionService` | all members |
+| Returns (Req. 3) | `persistence.ReturnRepository`, `service.ReturnService` | all members, including the monthly balance (A6) |
+| Returns (Req. 3) | `model.Return` | `calculateRefundAmount(double)` only (A7) |
+| Returns (Req. 3) | `model.Product` | `increaseStock(int)` only |
+| Warranties (Req. 4) | `persistence.WarrantyRepository`, `service.WarrantyService` | all members except `getWarranties` and `setWarranties` |
+| Exceptions and validation (Req. 6) | `service.ProductService`, `service.PersonService`, `service.SaleService` | calls to the validators and the exception handling |
+| Exceptions and validation (Req. 6) | `persistence.ProductRepository`, `persistence.PersonRepository`, `persistence.SaleRepository` | the `IOException` → `PersistenceException` handling |
 
----
+### 1.2 Members excluded from this audit
 
-## Violations
-
-### V-01
-
-- **ID:** V-01
-- **Pattern:** Protected Variations
-- **Module:** Person Module model `model`
-- **Evidence:** `Customer`, constructor and getter:
-  ```java
-  this.purchaseHistory = purchaseHistory;
-  ...
-  public List<Sale> getPurchaseHistory() { return purchaseHistory; }
-  ```
-- **Explanation:** The internal list is stored without copying and returned directly, so callers can change it without using `addPurchaseHistory`.
-- **Consequence:** Any future rule for recording sales (for example, no duplicates) can be bypassed by callers.
-- **Proposed solution:** Copy the list in the constructor and return `Collections.unmodifiableList(purchaseHistory)` from the getter. Before applying it, check that no caller modifies the returned list.
-- **Other developer's code:** To be confirmed (callers of `getPurchaseHistory()` outside the Person Module).
-
-### V-02
-
-- **ID:** V-02
-- **Pattern:** Low Coupling
-- **Module:** Person Module
-- **Evidence:** `Customer`: `private List<Sale> purchaseHistory;`. The reverse reference exists in `Sale` (`getOriginalSale().getCustomer()` in `ReturnService.viewReturnsByCustomer`), and `SaleRepository.loadSales(customers, sellers, products)` needs the customers to rebuild sales.
-- **Explanation:** `Customer` holds its sales and each `Sale` holds its customer, so the history duplicates data that the list of sales already contains.
-- **Consequence:** The two classes depend on each other and the duplicated relationship can diverge (see FD-01).
-- **Proposed solution:** Remove the stored history and obtain it with a query in the sales service (for example `listSalesByCustomer(customerId)`) that returns the same sales (Indirection).
-- **Other developer's code:** Yes. Callers of `addPurchaseHistory` and `getPurchaseHistory` (sales flow, console UI). Owners to be confirmed.
-
-### V-03
-
-- **ID:** V-03
-- **Pattern:** High Cohesion
-- **Module:** Person Module
-- **Evidence:** `PersonRepository.deleteCustomer` (`deleteSeller` follows the same structure):
-  ```java
-  for(Customer c:customers){
-      customers.remove(c);
-      saveCustomer(customers);
-  }
-  ```
-- **Explanation:** The repository removes elements from a list owned by `PersonService`, which is a business operation inside a persistence class.
-- **Consequence:** `PersonService` has no delete operation, so any deletion rule (for example, blocking the removal of a seller with registered sales) has no place to live.
-- **Proposed solution:** Move the removal to `PersonService`, which owns `customers` and `sellers` and then calls `repository.saveCustomer(...)` or `saveSeller(...)`. The repository keeps only `save` and `load`. The code is moved as it is; its defects are logged in FD-02.
-- **Other developer's code:** To be confirmed (callers of `deleteCustomer` and `deleteSeller`; there are none in `PersonService`).
-
-### V-04
-
-- **ID:** V-04
-- **Pattern:** High Cohesion
-- **Module:** Person Module in `model`
-- **Evidence:** `PersonRepository.saveCustomer` and `loadCustomer` (the same in `saveSeller` and `loadSeller`):
-  ```java
-  System.out.println("Customers saved successfully in " + customerCSV);
-  System.out.println("Data successfully loaded from " + customerCSV);
-  ```
-- **Explanation:** A persistence class writes user messages to the console, which is a user interface responsibility.
-- **Consequence:** Changing how messages are shown (log, graphical UI) requires editing the repository, and the repository cannot be used without console output.
-- **Proposed solution:** Remove the `System.out` calls from the repository and print the same messages from the layer that interacts with the user.
-- **Other developer's code:** Yes. `ConsoleMenu` and `Main` would print the messages. Owners to be confirmed.
-
-### V-05
-
-- **ID:** V-05
-- **Pattern:** Indirection
-- **Module:** Person Module
-- **Evidence:** `PersonService`:
-  ```java
-  private final PersonRepository repository;
-  public PersonService(PersonRepository repository, ...)
-  ```
-- **Explanation:** The service depends directly on the concrete class that stores data in CSV files.
-- **Consequence:** Changing the storage (for example, to a database) requires editing `PersonService`.
-- **Proposed solution:** Create an interface with the four operations (`saveCustomer`, `loadCustomer`, `saveSeller`, `loadSeller`), implement it in `PersonRepository` and make `PersonService` depend on the interface.
-- **Other developer's code:** No. Code that passes a `PersonRepository` keeps compiling.
-
----
-
-## Functional defects (not corrected in this requirement)
-
-### FD-01
-
-- **Evidence:** `Customer(String, String, String, String)` never assigns `purchaseHistory`, and `addPurchaseHistory` runs `purchaseHistory.add(sale);`. `PersonRepository.loadCustomer` builds customers with this constructor.
-- **Observed behavior:** `NullPointerException` when adding a sale; `getPurchaseHistory()` returns `null`.
-- **Expected behavior:** An empty history that accepts new sales.
-- **Not corrected because:** the fix changes what the user observes.
-
-### FD-02
-
-- **Evidence:** `PersonRepository.deleteSeller` and `deleteCustomer` never use the `id` parameter:
-  ```java
-  for (Seller s:sellers){ sellers.remove(s); saveSeller(sellers); break; }
-  ```
-  `deleteCustomer` has no `break`.
-- **Observed behavior:** Both methods remove the first element of the list whatever the `id`. `deleteCustomer` can also throw `ConcurrentModificationException`, because it removes while iterating.
-- **Expected behavior:** Remove only the person whose id matches.
-- **Not corrected because:** the fix changes which records are deleted.
-
-### FD-03
-
-- **Evidence:** `PersonRepository.loadCustomer` and `loadSeller` use `line.split(",")` and `if (parts.length == 4)` (`== 5` for sellers).
-- **Observed behavior:** Lines with another number of fields are silently ignored. Since `split(",")` drops trailing empty fields, a record whose last field is empty is ignored too. The next `saveCustomer` or `saveSeller` rewrites the file without them, so those records are lost.
-- **Expected behavior:** Keep the records or report the invalid line.
-- **Not corrected because:** the fix changes which data is loaded.
-
-***
-
-# 3. GRASP Audit — Accessory Service and Persistence
-
-**Classes audited:** `AccessoryRepository`, `AccessoryService`
-**Module:** `persistence`,`service`
-
-## Verdict by pattern
-
-| Pattern | Verdict | Note |
+| Member | Reason | Reported to |
 |---|---|---|
-| Information Expert | Correct | The service works on the list it owns; the repository only converts the data it receives. |
-| Creator | Correct | The service creates each accessory from the data it receives; the repository creates them from the CSV data. |
-| Controller | Not applicable | Neither class receives system events. |
-| Low Coupling | Correct | Both classes depend only on the model and on each other. |
-| High Cohesion | Correct | Persistence stays in the repository and business rules in the service; there is no console output. |
-| Polymorphism | Violation (V-06, V-07) | Type checks on accessories in the repository and in the stock operations. |
-| Pure Fabrication | Correct | The repository and the service keep persistence and business rules out of the model. |
-| Indirection | Violation (V-08) | `AccessoryService` depends on the concrete CSV repository. |
-| Protected Variations | Correct | `listAllAccessories` returns a copy, so callers cannot modify the internal list. |
+| `WarrantyService.getWarranties`, `setWarranties` | Written by the Technical Lead (`55dd5fd`, A3) | Technical Lead |
+| `ProductService.restoreStock` | Written by Developer 2 (`6a20f94`), but the requirement assigns its audit to the Technical Lead | Technical Lead |
+| `exceptions` and `validation` packages | Classes of Developer 1; only their use in services and repositories is audited here | — |
 
 ---
 
-## Violations
+## 2. Information Expert
 
-### V-06
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-10 |
 
-- **ID:** V-06
-- **Pattern:** Polymorphism
-- **Module:** `persistence`
-- **Evidence:** `AccessoryRepository.toCsvLine` and `fromCsvLine`:
-  ```java
-  if (a instanceof Cable cable) { ... }
-  if (a instanceof Controller controller) { ... }
-  if (a instanceof Memory memory) { ... }
-  ...
-  if (CABLE_TYPE.equals(type)) { ... }
-  ```
-- **Explanation:** Saving and loading branch on the concrete accessory type, with `instanceof` in one direction and discriminator comparisons in the other.
-- **Consequence:** A new accessory type requires editing `toCsvLine`, `fromCsvLine` and the constants. A missed branch fails at runtime with `IllegalArgumentException`.
-- **Proposed solution:** Create one small mapper per accessory type (discriminator, accessory to line, line to accessory) and register them by discriminator in the repository, which then delegates to the mapper instead of testing types. The CSV lines stay identical and the model stays free of persistence code.
-- **Other developer's code:** No.
+**Correctly applied**
 
-### V-07
+| Class / method | Why it is correct |
+|---|---|
+| `ReturnService.calculateMonthlySales` | Uses `Sale.calculateFinalTotal()`: the sale knows its own total. |
+| `Return.calculateRefundAmount(double)` | The return owns its refund amount and adds the warranty refund to it. |
+| `Product.increaseStock` | The product owns its stock. |
+| `PromotionService.findBestPromotionFor` | Asks each `Promotion` for `isActive` and `calculateDiscount`. |
 
-- **ID:** V-07
-- **Pattern:** Polymorphism
-- **Module:** `service`
-- **Evidence:** `AccessoryService.updateStock` and `restoreStock` repeat the stock operations of `ProductService`, so callers must choose the service by type. In `ReturnService.restoreStockFor`:
-  ```java
-  if (product instanceof Accessory) {
-      accessoryService.restoreStock(product.getProductId(), quantity);
-  } else {
-      productService.restoreStock(product.getProductId(), quantity);
-  }
-  ```
-- **Explanation:** Stock of accessories and of other products is managed by two services without a common interface, so every client that touches inventory has to test the product type.
-- **Consequence:** Each new client (or new product type) repeats the type check, and a missed check updates the wrong inventory or fails.
-- **Proposed solution:** Define a common stock-management interface (`updateStock`, `restoreStock`) implemented by `ProductService` and `AccessoryService`, plus a single entry point that selects the right one, so clients call it without checking the type. Stock results stay the same.
-- **Other developer's code:** Yes. `ReturnService.restoreStockFor` and the sales code that decreases stock (`SaleService`). Owners to be confirmed.
+**Violations**
 
-### V-08
-
-- **ID:** V-08
-- **Pattern:** Indirection
-- **Module:** `service`
-- **Evidence:** `AccessoryService`:
-  ```java
-  private final AccessoryRepository accessoryRepository;
-  public AccessoryService(AccessoryRepository accessoryRepository, List<Accessory> accessories)
-  ```
-- **Explanation:** The service depends directly on the concrete class that stores data in a CSV file.
-- **Consequence:** Changing the storage (for example, to a database) requires editing `AccessoryService`.
-- **Proposed solution:** Create an interface with `saveAll` and `loadAll`, implement it in `AccessoryRepository` and make `AccessoryService` depend on the interface.
-- **Other developer's code:** No. Code that passes an `AccessoryRepository` keeps compiling.
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-10 | Warranties (Req. 4), A2 | `WarrantyRepository.loadAll(List<Sale>, List<Product>)`, line 34, and `fromCsvLine`, lines 90–114: loops over `products` and `sales` to find each reference | The repository resolves `Sale` and `Product` objects; A2 assigned that responsibility to `WarrantyService`. The two loops are also duplicated for each warranty type. Also affects Low Coupling. | The repository depends on `Sale` and `Product` and needs full domain lists only to read a file. | The repository returns the raw records (ids); `WarrantyService` resolves `Sale` and `Product`. Same warranties are loaded. | No |
 
 ---
 
-## Functional defects (not corrected in this requirement)
+## 3. Creator
 
-### FD-04
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
 
-- **Evidence:** `AccessoryService.findAccessoriesCompatibleWith(String ConsoleId)`:
-  ```java
-  if (a.getAccessoryType().equals(ConsoleId)){
-  ```
-- **Observed behavior:** The method compares the accessory type (for example `"CABLE"`) with the console id, so it returns accessories only when the console id equals a type name. It does not check real compatibility.
-- **Expected behavior:** Return the accessories compatible with the console that has the given id.
-- **Not corrected because:** the fix changes the results the user sees.
+| Class / method | Why it is correct |
+|---|---|
+| `PersonService.registerCustomer`, `registerSeller` | The service holds the `customers` and `sellers` lists and the initialization data. |
+| `WarrantyService.assignBasicWarranty`, `assignExtendedWarranty` | The service holds the warranty list and receives the product, sale and date. |
+| `ReturnService.registerReturn` | The service holds the returns list and has the sale and the returned products. |
+| `*Repository.fromCsvLine` | Each repository holds the CSV data used to rebuild its objects. |
 
-# 4. GRASP Audit — Promotion Module
+---
 
-**Classes audited:** `PromotionRepository`, `PromotionService`
-**Module:** `persistence`, `service`
+## 4. Controller
 
-## Verdict by pattern
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
 
-| Pattern | Verdict | Note |
+| Class / method | Why it is correct |
+|---|---|
+| `PersonService`, `AccessoryService`, `PromotionService`, `ReturnService`, `WarrantyService` | Use-case controllers: `ConsoleMenu` delegates each system operation of its module to them. |
+| Repositories | Not applicable: they receive no system events. |
+
+---
+
+## 5. Low Coupling
+
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-01 (also V-10) |
+
+**Correctly applied**
+
+| Class / method | Why it is correct |
+|---|---|
+| `WarrantyService` constructor | Receives `WarrantyRepository`, `SaleRepository` and `ProductService`, exactly as adjustment A2 requires to break the circular dependency. |
+| `PersonRepository`, `ProductRepository`, `SaleRepository` | Depend only on the model and on `PersistenceException`. |
+
+**Violations**
+
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-01 | Persons (Workshop 1) | `Customer`: field `purchaseHistory` (line 11), constructor with history (lines 21–25), `getPurchaseHistory` (59–61), `addPurchaseHistory` (67–69) | `Customer` keeps a list of `Sale` while each `Sale` already references its `Customer`. No class calls these members, and the constructor used by the system never initializes the list. Also affects High Cohesion. | Two-way dependency between `Customer` and `Sale` for an unused responsibility; any future use would fail with `NullPointerException`. | Remove the unused history members; the history of a customer can be obtained from the sales. Behavior does not change because nothing uses them. | No |
+
+---
+
+## 6. High Cohesion
+
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-02, V-03, V-04, V-05 |
+
+**Correctly applied**
+
+| Class / method | Why it is correct |
+|---|---|
+| `AccessoryService`, `PromotionService`, `WarrantyService` | Only business rules of their module; no console output. |
+| `AccessoryRepository`, `PromotionRepository` | Only CSV persistence. |
+
+**Violations**
+
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-02 | Persons (Workshop 1) | `PersonRepository.deleteSeller` (lines 160–166) and `deleteCustomer` (175–180): remove elements from the list received | A persistence class performs a business operation (deleting persons). No class calls these methods. | Any deletion rule would have to live in the repository instead of the service. | Remove both unused methods; the repository keeps only save and load. Behavior does not change. | No |
+| V-03 | Persons (Workshop 1) | `PersonRepository`: `System.out.println("Customers saved successfully in " ...)` and the same messages at lines 54, 88, 109, 144 | A persistence class writes messages to the console, a user-interface responsibility. | The repository cannot be used without console output. | Remove the messages from the repository. **Note:** the messages are shown today, so the consolidation must decide whether to print them from `Main` (Technical Lead) or move this finding to out of scope. | Possibly Technical Lead (`Main`) |
+| V-04 | Returns (Req. 3) | `ReturnService.registerReturn`, line 155: `System.out.println("Devolución registrada exitosamente.");` | A business service prints to the console. | The service is tied to the console UI. | Remove the line and print the same message in `ConsoleMenu` right after `registerReturn` succeeds. Output stays identical. | Yes: Technical Lead (`ConsoleMenu`) |
+| V-05 | Exceptions (Req. 6) | `SaleService.registerSale`, lines 183–188: `catch (InvalidDataException \| BusinessRuleException e) { System.err.println("Sale validation failed: " + e.getMessage()); return false; }` | The service catches the typed exceptions, prints them and returns `false`. Also affects Indirection: the exceptions never reach the UI. | The differentiated `catch` blocks of `ConsoleMenu.registerSale` (lines 596–603) never run for these errors. | Let the exceptions propagate to `ConsoleMenu`. **Note:** this changes the message the user sees; if the team keeps the rule of identical messages, move it to out of scope. | Yes: Technical Lead (`ConsoleMenu`) |
+
+---
+
+## 7. Polymorphism
+
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-06, V-07, V-08, V-09 |
+
+**Correctly applied**
+
+| Class / method | Why it is correct |
+|---|---|
+| `PromotionService.findBestPromotionFor` | Calls `calculateDiscount` on any `Promotion` without checking its type. |
+| `WarrantyService.listActiveWarranties` | Calls `isActive` on any `Warranty`. |
+
+**Violations**
+
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-06 | Accessories (Req. 1) | `AccessoryRepository.toCsvLine`, lines 80–114 (`instanceof Cable` / `Controller` / `Memory`); `fromCsvLine`, lines 126–146 (`CABLE_TYPE.equals(type)` …) | The CSV format varies by accessory type but is chosen with conditionals. | A new accessory type requires editing both methods; a miss fails only at runtime. | One mapper per accessory type, registered by discriminator. CSV lines stay identical. | No |
+| V-07 | Promotions (Req. 2) | `PromotionRepository.toCsvLine`, lines 77–110 (`instanceof BulkPurchaseDiscount` …); `fromCsvLine`, lines 122–142 | Same problem for promotion types. | A new promotion type requires editing the repository, although `PromotionService` already works with any `Promotion`. | One mapper per promotion type, registered by discriminator. | No |
+| V-08 | Returns (Req. 3), A4 | `ReturnService.restoreStockFor`, lines 168–174, and `ReturnRepository.resolveProduct`, lines 113–120: `if (product instanceof Accessory)` | The service and repository choose the inventory by checking the product type. | A new product type with its own inventory requires editing both classes. | `resolveProduct`: look up the id in `AccessoryService` without checking the type. `restoreStockFor`: map of restore operations by `Product.getCategory()`, the method added by Developer 1 in his V-03. | No (uses `getCategory()` once Developer 1 adds it; no change to his code) |
+| V-09 | Returns (Req. 3), A7 | `WarrantyService.cancelWarranties`, line 157: `if (warranty instanceof ExtendedWarranty) { refundableCost += warranty.getAdditionalCost(); }` | `BasicWarranty.getAdditionalCost()` already returns 0, so the type check is unnecessary. | Each new warranty type would need another check. | `refundableCost += warranty.getAdditionalCost();` for every cancelled warranty. Same result. | No |
+
+---
+
+## 8. Pure Fabrication
+
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+
+| Class / method | Why it is correct |
+|---|---|
+| `PersonRepository`, `AccessoryRepository`, `PromotionRepository`, `ReturnRepository`, `WarrantyRepository` | Invented classes for file persistence; keep the model free of I/O. |
+| Services of the module | Keep business rules out of the model classes. |
+
+---
+
+## 9. Indirection
+
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+
+| Class / method | Why it is correct |
+|---|---|
+| `PersonService`, `AccessoryService`, `PromotionService`, `ReturnService`, `WarrantyService` | Sit between `ConsoleMenu` and the repositories, so the UI never depends on persistence. |
+| Repositories with `PersistenceException` | Translate low-level `IOException` into the exception the UI handles. |
+
+The services depend on concrete repositories. This was not recorded as a violation: the requirements foresee no change of storage, and the same design is used by every service of the system.
+
+---
+
+## 10. Protected Variations
+
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-11 (V-06, V-07, V-08 also contribute) |
+
+**Correctly applied**
+
+| Class / method | Why it is correct |
+|---|---|
+| `AccessoryService.listAllAccessories`, `PromotionService.listAllPromotions`, `WarrantyService.listAllWarranties` | Return copies, so callers cannot change the internal lists. |
+| `PromotionService` | A new discount type needs no change in the service. |
+
+**Violations**
+
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-11 | Returns (Req. 3) | `ReturnService.viewAllReturns`, lines 181–182: `return returns;` | The internal list is returned directly, unlike the other services. | Callers can add or remove returns without the service and without persisting. | Return `new ArrayList<>(returns)`. `ConsoleMenu.viewAllReturns` only reads the list, so the output is the same. | No |
+
+---
+
+## 11. Functional defects (not corrected in this requirement)
+
+Fixing these defects would change what the user observes, so they are recorded for a later requirement.
+
+| ID | Location | Evidence | Observed behavior |
+|---|---|---|---|
+| FD-01 | `ReturnRepository.saveAll`, line 50 | `throw new RuntimeException("Failed to save promotions to " + FILE_PATH, e);` | A failure saving returns reports that promotions could not be saved. |
+| FD-02 | `ReturnRepository.fromCsvLine` (lines 98–102) and `loadAll` (lines 142–144) | `fromCsvLine` returns `null` when the sale is not found, and `loadAll` skips it. | Returns whose sale is missing disappear silently, and the next `saveAll` rewrites the file without them. |
+| FD-03 | `WarrantyRepository.fromCsvLine`, lines 90–114 | When a product or sale id is not found, `product` or `sale` stays `null` and is passed to the warranty constructor. | The `Warranty` constructor throws `IllegalArgumentException("Product must not be null")`; `Main` prints "Fatal error: Product must not be null" and exits, so the system cannot start. |
+| FD-04 | `PersonRepository.loadCustomer` (lines 77–79) and `loadSeller` (132–134) | `line.split(",")` and `if (parts.length == 4)` (`== 5` for sellers). | Records with a comma in a field, or with an empty last field, are ignored silently and lost at the next save. |
+| FD-05 | `PersonService.registerCustomer` (line 40) and `registerSeller` (line 56) | Uniqueness is checked only inside `customers` or inside `sellers`. | A customer and a seller can be registered with the same id, although Req. 6 asks that no other person share the identifier. |
+| FD-06 | `AccessoryService.findAccessoriesCompatibleWith`, line 133 | `if (a.getAccessoryType().equals(ConsoleId))` | Compares the accessory type with a console id, so it never returns the compatible accessories. |
+
+---
+
+## 12. Problems reported to the Technical Lead
+
+| # | Location | Observation |
 |---|---|---|
-| Information Expert | Correct | `Promotion` decides whether it is active and what discount it gives; the service works on the list it owns. |
-| Creator | Correct | The service creates each promotion from the data it receives; the repository creates them from the CSV data. |
-| Controller | Not applicable | Neither class receives system events. |
-| Low Coupling | Correct | Both classes depend only on the model and on each other. |
-| High Cohesion | Correct | Persistence stays in the repository and business rules in the service; there is no console output. |
-| Polymorphism | Violation (V-09) | The repository branches on the promotion type. The service already calls `isActive` and `calculateDiscount` polymorphically. |
-| Pure Fabrication | Correct | The repository and the service keep persistence and business rules out of the model. |
-| Indirection | Violation (V-10) | `PromotionService` depends on the concrete CSV repository. |
-| Protected Variations | Correct | `listAllPromotions` returns a copy, and a new discount type needs no change in `PromotionService`. |
+| R-1 | `WarrantyService.getWarranties`, `setWarranties` (lines 212–223) | Written in A3 by the Technical Lead; they expose the internal list and have no callers. |
+| R-2 | `ProductService.restoreStock` | Written by Developer 2 but assigned to the Technical Lead by the requirement; to be confirmed in the consolidation. |
 
 ---
 
-## Violations
+## 13. Summary of verdicts
 
-### V-09
-
-- **ID:** V-09
-- **Pattern:** Polymorphism
-- **Module:** `persistence`
-- **Evidence:** `PromotionRepository.toCsvLine` and `fromCsvLine`:
-  ```java
-  if (promotion instanceof BulkPurchaseDiscount bulk) { ... }
-  if (promotion instanceof CategoryDiscount category) { ... }
-  if (promotion instanceof PercentageDiscount percentage) { ... }
-  ...
-  if (BULK_TYPE.equals(type)) { ... }
-  ```
-- **Explanation:** Saving and loading branch on the concrete promotion type, with `instanceof` in one direction and discriminator comparisons in the other.
-- **Consequence:** A new promotion type requires editing `toCsvLine`, `fromCsvLine` and the constants, even though `PromotionService` works with any `Promotion`. A missed branch fails at runtime with `IllegalArgumentException`.
-- **Proposed solution:** Create one small mapper per promotion type (discriminator, promotion to line, line to promotion) and register them by discriminator in the repository, which then delegates to the mapper instead of testing types. The CSV lines stay identical and the model stays free of persistence code.
-- **Other developer's code:** No.
-
-### V-10
-
-- **ID:** V-10
-- **Pattern:** Indirection
-- **Module:** `service`
-- **Evidence:** `PromotionService`:
-  ```java
-  private final PromotionRepository promotionRepository;
-  public PromotionService(PromotionRepository promotionRepository, List<Promotion> promotions)
-  ```
-- **Explanation:** The service depends directly on the concrete class that stores data in a CSV file.
-- **Consequence:** Changing the storage (for example, to a database) requires editing `PromotionService`.
-- **Proposed solution:** Create an interface with `saveAll` and `loadAll`, implement it in `PromotionRepository` and make `PromotionService` depend on the interface.
-- **Other developer's code:** No. Code that passes a `PromotionRepository` keeps compiling.
-
----
-
-## Functional defects (not corrected in this requirement)
-
-None found in these classes.
-
----
-
-# 5. GRASP Audit — Return Service and Persistence
-
-**Classes audited:** `ReturnRepository`, `ReturnService`
-**Module:** `persistence`, `service`
-
-## Verdict by pattern
-
-| Pattern | Verdict | Note |
+| Pattern | Verdict | Violations |
 |---|---|---|
-| Information Expert | Correct | The service works on the returns list it owns; the repository converts data it receives. |
-| Creator | Correct | The service creates each return from parameters; the repository creates them from CSV data. |
-| Controller | Not applicable | Neither class receives system events. |
-| Low Coupling | Correct | Both classes depend only on the model and required services/repositories. |
-| High Cohesion | Violation (V-12) | `ReturnService` prints messages directly to the console. |
-| Polymorphism | Violation (V-13) | `ReturnService` checks product types with `instanceof` to restore stock. |
-| Pure Fabrication | Correct | The repository and service keep persistence and business rules out of the model. |
-| Indirection | Violation (V-14) | `ReturnService` depends on the concrete CSV repository. |
-| Protected Variations | Violation (V-11) | `viewAllReturns` returns the internal list directly, allowing external modification. |
+| Information Expert | Violation | V-10 |
+| Creator | Correct | — |
+| Controller | Correct | — |
+| Low Coupling | Violation | V-01 |
+| High Cohesion | Violation | V-02, V-03, V-04, V-05 |
+| Polymorphism | Violation | V-06, V-07, V-08, V-09 |
+| Pure Fabrication | Correct | — |
+| Indirection | Correct | — |
+| Protected Variations | Violation | V-11 |
+
+| Item | Detail |
+|---|---|
+| Boundary violations | V-04 and V-05 (`ConsoleMenu`), possibly V-03 (`Main`): Technical Lead. |
+| May move to out of scope | V-03 and V-05, if their correction changes the console output. |
+| Dependency on Developer 1 | V-08 uses `Product.getCategory()` from Developer 1's V-03; no change to his code. |
+| Suggested order | V-01, V-02, V-09, V-11, V-10, V-06, V-07, then V-08 (after Developer 1's V-03), then V-03, V-04, V-05 with the Technical Lead. |
 
 ---
 
-## Violations
-
-### V-11
-
-- **ID:** V-11
-- **Pattern:** Protected Variations
-- **Module:** `service`
-- **Evidence:** `ReturnService`:
-  ```java
-  public List<Return> viewAllReturns(){
-      return returns;
-  }
-  ```
-- **Explanation:** The internal list of returns is returned directly without copying or wrapping, allowing callers to modify it without using service methods.
-- **Consequence:** Business invariants or auditing rules on returns can be bypassed by external callers modifying the list.
-- **Proposed solution:** Return an unmodifiable view or a copy of the list (e.g., `Collections.unmodifiableList(returns)` or `new ArrayList<>(returns)`).
-- **Other developer's code:** To be confirmed (callers of `viewAllReturns()`).
-
-### V-12
-
-- **ID:** V-12
-- **Pattern:** High Cohesion
-- **Module:** `service`
-- **Evidence:** `ReturnService.registerReturn`:
-  ```java
-  System.out.println("Devolución registrada exitosamente.");
-  ```
-- **Explanation:** A business service class performs console printing, mixing business logic with user interface responsibilities.
-- **Consequence:** Hardcodes console output, making it difficult to adapt the application to graphical or web interfaces without modifying the service.
-- **Proposed solution:** Remove the `System.out.println` from the service layer and handle user feedback in the UI layer.
-- **Other developer's code:** Yes. Console UI or controllers expecting printed feedback.
-
-### V-13
-
-- **ID:** V-13
-- **Pattern:** Polymorphism
-- **Module:** `service`
-- **Evidence:** `ReturnService.restoreStockFor`:
-  ```java
-  if (product instanceof Accessory) {
-      accessoryService.restoreStock(product.getProductId(), quantity);
-  } else {
-      productService.restoreStock(product.getProductId(), quantity);
-  }
-  ```
-- **Explanation:** Stock restoration branches on concrete product types using `instanceof` instead of delegating through polymorphic methods on the `Product` hierarchy.
-- **Consequence:** Adding a new product type requires modifying `ReturnService` to add another conditional branch.
-- **Proposed solution:** Implement a uniform stock restoration method or interface across product types so the service calls it polymorphically without type checks.
-- **Other developer's code:** No.
-
-### V-14
-
-- **ID:** V-14
-- **Pattern:** Indirection
-- **Module:** `service`
-- **Evidence:** `ReturnService`:
-  ```java
-  private final ReturnRepository returnRepository;
-  public ReturnService(ReturnRepository returnRepository, ...)
-  ```
-- **Explanation:** The service depends directly on the concrete CSV repository implementation.
-- **Consequence:** Changing the storage mechanism (e.g., to a relational database) requires modifying `ReturnService`.
-- **Proposed solution:** Introduce a repository interface implemented by `ReturnRepository`, and make `ReturnService` depend on the interface.
-- **Other developer's code:** No.
-
----
-
-## Functional defects (not corrected in this requirement)
-
-### FD-05
-
-- **Evidence:** `ReturnRepository.saveAll`:
-  ```java
-  throw new RuntimeException("Failed to save promotions to " + FILE_PATH, e);
-  ```
-- **Observed behavior:** The exception message incorrectly mentions "promotions" instead of returns.
-- **Expected behavior:** The error message should accurately reflect that it failed to save returns.
-- **Not corrected because:** the fix changes error messages / string output.
-
-### FD-06
-
-- **Evidence:** `ReturnRepository.fromCsvLine`:
-  ```java
-  List<Sale> sales = saleService.listAllSales();
-  ```
-- **Observed behavior:** During `loadAll()`, for every single CSV line read, `saleService.listAllSales()` is invoked, leading to an $O(N^2)$ performance bottleneck if there are many returns and sales. Furthermore, if a sale ID cannot be found, `fromCsvLine` returns `null` and `loadAll` silently ignores it without warning.
-- **Expected behavior:** Load sales once before processing lines or handle missing sales gracefully with proper logging.
-- **Not corrected because:** the fix alters performance characteristics or data loading flow.
-
----
-
-# 6. GRASP Audit - Warranty Module
-
-**Classes audited:** `WarrantyRepository`, `WarrantyService`
-**Module:** `persistence`, `service`
-
-## Verdict by pattern
-
-| Pattern | Verdict | Note |
-|---|---|---|
-| Information Expert | Violation (V-15) | `WarrantyRepository` resolves domain objects (`Product`, `Sale`) while loading CSV data. |
-| Creator | Correct | `WarrantyService` handles the creation of `BasicWarranty` and `ExtendedWarranty` instances. |
-| Controller | Not applicable | No class in the module receives system events. |
-| Low Coupling | Violation (V-16, V-17) | `WarrantyService` directly instantiates external repositories and receives low-level persistence objects in its constructor. |
-| High Cohesion | Correct | `WarrantyService` manages warranty business operations and `WarrantyRepository` handles CSV persistence. |
-| Polymorphism | Correct | No type-based conditionals in the module for business rules. |
-| Pure Fabrication | Correct | `WarrantyRepository` and `WarrantyService` keep persistence and business rules separate from the domain models. |
-| Indirection | Violation (V-18) | `WarrantyService` depends directly on the concrete `WarrantyRepository` implementation. |
-| Protected Variations | Violation (V-19) | Internal state `warranties` is exposed via a mutable getter and setter. |
-
----
-
-## Violations
-
-### V-15
-
-- **ID:** V-15
-- **Pattern:** Information Expert
-- **Module:** Warranty Module (`persistence`)
-- **Evidence:** `WarrantyRepository.loadAll` and `fromCsvLine`:
-  ```java
-  public List<Warranty> loadAll(List<Sale>sales,List<Product>products) {
-      ...
-      result.add(fromCsvLine(line,sales,products));
-      ...
-  }
-
-  private Warranty fromCsvLine(String line, List<Sale>sales,List<Product>products) {
-      ...
-      for (Product p : products){
-          if (p.getProductId().equals(productId)){
-              product=p;
-          }
-      }
-      for (Sale s : sales){
-          if (s.getId().equals(saleId)){
-              sale=s;
-          }
-      }
-      ...
-  }
-  ```
-- **Explanation:** The persistence layer is performing object reference resolution by iterating over domain lists (`Sale`, `Product`) to assemble rich domain entities. The repository should only focus on reading and writing primitive/DTO data or raw identifiers, leaving reference resolution to the service layer.
-- **Consequence:** `WarrantyRepository` is overly coupled to domain model structures (`Product`, `Sale`) and requires callers to pass full domain collections just to read raw persistence records.
-- **Proposed solution:** Modify `WarrantyRepository` to return raw warranty records/DTOs containing string IDs, and perform the lookup and linking of `Product` and `Sale` within `WarrantyService`.
-- **Other developer's code:** Yes. Callers of `WarrantyRepository.loadAll` in `WarrantyService`.
-
-### V-16
-
-- **ID:** V-16
-- **Pattern:** Low Coupling
-- **Module:** Warranty Module (`service`)
-- **Evidence:** `WarrantyService` constructor:
-  ```java
-  public WarrantyService(WarrantyRepository warrantyRepository,
-                         SaleRepository saleRepository,
-                         ProductService productService,
-                         List<Customer> customers,
-                         List<Seller> sellers) {
-      this.warrantyRepository = warrantyRepository;
-      List<Product> products = productService.listAllProducts();
-      List<Sale> sales = saleRepository.loadSales(customers, sellers, products);
-      this.warranties = warrantyRepository.loadAll(sales, products);
-  }
-  ```
-- **Explanation:** `WarrantyService` directly invokes `SaleRepository` and manages low-level orchestration of `customers` and `sellers` just to rebuild sales and load warranties.
-- **Consequence:** `WarrantyService` is tightly coupled to `SaleRepository`, `Customer`, `Seller`, and `ProductService` during initialization, increasing ripple effects when any of those components change.
-- **Proposed solution:** Pass an already initialized `SaleService` or high-level sales provider to `WarrantyService` instead of rebuilding sales using low-level repositories and raw lists inside `WarrantyService`'s constructor.
-- **Other developer's code:** Yes. Initialization code in `Main` or `ConsoleMenu` that instantiates `WarrantyService`.
-
-### V-17
-
-- **ID:** V-17
-- **Pattern:** Low Coupling
-- **Module:** Warranty Module (`persistence`)
-- **Evidence:** `WarrantyRepository.java`:
-  ```java
-  import com.gamezone.model.*;
-  ```
-  `WarrantyRepository` imports and uses `Sale` and `Product` directly.
-- **Explanation:** A repository class in the persistence module depends on multiple model entities outside its immediate domain responsibility.
-- **Consequence:** Any structural change to `Sale` or `Product` can break `WarrantyRepository` unnecessarily.
-- **Proposed solution:** Remove `Sale` and `Product` dependencies from `WarrantyRepository` by persisting and reading basic field strings (e.g., `productId`, `saleId`).
-- **Other developer's code:** No.
-
-### V-18
-
-- **ID:** V-18
-- **Pattern:** Indirection
-- **Module:** Warranty Module (`service`)
-- **Evidence:** `WarrantyService`:
-  ```java
-  private final WarrantyRepository warrantyRepository;
-  public WarrantyService(WarrantyRepository warrantyRepository, ...)
-  ```
-- **Explanation:** `WarrantyService` depends directly on the concrete class `WarrantyRepository` which manages CSV files.
-- **Consequence:** Replacing CSV persistence with a database or mock implementation requires modifying `WarrantyService`.
-- **Proposed solution:** Introduce an interface `IWarrantyRepository` (or `WarrantyRepository` interface with `WarrantyRepositoryCSV` implementation) and inject the interface into `WarrantyService`.
-- **Other developer's code:** No.
-
-### V-19
-
-- **ID:** V-19
-- **Pattern:** Protected Variations
-- **Module:** Warranty Module (`service`)
-- **Evidence:** `WarrantyService.getWarranties` and `setWarranties`:
-  ```java
-  public List<Warranty> getWarranties() {
-      return warranties;
-  }
-
-  public void setWarranties(List<Warranty> warranties) {
-      this.warranties = warranties;
-  }
-  ```
-- **Explanation:** The internal mutable list `warranties` is directly exposed via a getter, and can be replaced entirely via `setWarranties` without validation.
-- **Consequence:** External classes can mutate the internal state of `WarrantyService` without triggering persistence or obeying business rules.
-- **Proposed solution:** Return an unmodifiable list or defensive copy from `getWarranties()`, and remove `setWarranties()`.
-- **Other developer's code:** To be confirmed (external callers modifying the list directly).
-
----
-
-## Functional defects (not corrected in this requirement)
-
-### FD-07
-
-- **Evidence:** `WarrantyRepository.fromCsvLine`:
-  ```java
-  for (Product p : products){
-      if (p.getProductId().equals(productId)){
-          product=p;
-      }
-  }
-  for (Sale s : sales){
-      if (s.getId().equals(saleId)){
-          sale=s;
-      }
-  }
-  ```
-- **Observed behavior:** If a `productId` or `saleId` stored in the CSV does not exist in `products` or `sales`, `product` or `sale` remains `null` when creating `ExtendedWarranty` or `BasicWarranty`.
-- **Expected behavior:** Report an error, log a warning, or throw an exception for missing references during CSV parsing.
-- **Not corrected because:** Fixing this behavior alters how invalid or orphaned records are handled during startup.
-
-### FD-08
-
-- **Evidence:** `WarrantyService.cancelWarranties`:
-  ```java
-  if (warranty instanceof ExtendedWarranty) {
-      refundableCost += warranty.getAdditionalCost();
-  }
-  ```
-- **Observed behavior:** Basic warranties are added to `toCancel` list and deleted, but `getAdditionalCost()` is only added for extended warranties. However, if multiple matching warranties exist, all matching ones are removed without checking if they are currently active or already expired.
-- **Expected behavior:** Only active warranties should be canceled and refunded.
-- **Not corrected because:** Changing cancellation logic modifies observable business output for warranty management.
-
-***
-# 7. GRASP Audit - Product Module
-
-**Classes audited:** `Product`, `Console`, `VideoGame`, `Accessory`, `ProductRepository`, `ProductService`, `ProductValidator`  
-**Module:** Product Module
-
-## Verdict by pattern
-
-| Pattern | Verdict | Note |
-|---|---|---|
-| Information Expert | Correct | `ProductService` delegates field validation to `ProductValidator` and model state checks to `Product`. |
-| Creator | Correct | `ProductService` creates product sub-entities (`Console`, `VideoGame`, `Accessory`) where required data is available. |
-| Controller | Not applicable | No class in the module receives system events. |
-| Low Coupling | Violation (V-20) | `ProductService` delegates validation logic to `ProductValidator` using direct static calls rather than encapsulating or abstracting checks. |
-| High Cohesion | Correct | `ProductService` manages business operations while `ProductRepository` manages file persistence. |
-| Polymorphism | Correct | Product subclasses manage their specific properties without type checking in service methods. |
-| Pure Fabrication | Correct | `ProductValidator` and `ProductRepository` separate validation and persistence concerns from domain models. |
-| Indirection | Correct | `ProductService` acts as an intermediate coordinator between the UI layer and repository/domain models. |
-| Protected Variations | Violation (V-21) | `ProductService.updateStock` relies on `orElse(null)` leading to potential unhandled null propagation before external validation. |
-
----
-
-## Violations
-
-### V-20
-
-- **ID:** V-20
-- **Pattern:** Low Coupling
-- **Module:** Product Module (`service`)
-- **Evidence:** `ProductService.registerConsole`, `updateStock`, `restoreStock`, and `updateProduct`:
-  ```java
-  ProductValidator.validateProductData(productId, title, price, stockQuantity);
-  ProductValidator.validateProductExists(product, productId);
-  ProductValidator.validateStockAvailability(product, quantity);
-  ```
-- **Explanation:** `ProductService` is tightly coupled to static methods in `ProductValidator`. Calling static validation utilities directly makes it impossible to substitute different validation policies or mock validation logic during isolated unit testing.
-- **Consequence:** Modifying or extending validation rules requires changing static dependencies, creating tight coupling between business orchestrations and specific static helper implementations.
-- **Proposed solution:** Inject a validation strategy interface into `ProductService` or instance-level `ProductValidator` to decouple concrete validation rules from service execution.
-- **Other developer's code:** No.
-
-### V-21
-
-- **ID:** V-21
-- **Pattern:** Protected Variations
-- **Module:** Product Module (`service`)
-- **Evidence:** `ProductService.updateStock` and `restoreStock`:
-  ```java
-  public void updateStock(String productId, int quantity) {
-      Product product = findById(productId).orElse(null);
-      ProductValidator.validateProductExists(product, productId);
-      ...
-  }
-  ```
-- **Explanation:** `ProductService` unpacks an `Optional<Product>` into a potentially `null` reference (`orElse(null)`) and relies on an external utility (`ProductValidator.validateProductExists`) to throw an exception if `null`.
-- **Consequence:** Bypassing `Optional` handling patterns exposes the internal flow to potential `NullPointerException`s if validation checks are refactored, bypassed, or reordered.
-- **Proposed solution:** Handle missing entity instances natively using `findById(productId).orElseThrow(...)` before invoking subsequent logic.
-- **Other developer's code:** No.
-
----
-
-## Functional defects (not corrected in this requirement)
-
-### FD-09
-
-- **Evidence:** `ProductService.updateProduct`:
-  ```java
-  public boolean updateProduct(String productId, String title, double price, int stockQuantity) {
-      ProductValidator.validateProductData(productId, title, price, stockQuantity);
-      Optional<Product> found = findById(productId);
-      if (found.isEmpty()) {
-          return false;
-      }
-      Product product = found.get();
-      product.setTitle(title);
-      product.setPrice(price);
-      product.setStockQuantity(stockQuantity);
-      persist();
-      return true;
-  }
-  ```
-- **Observed behavior:** When `updateProduct` is called for a non-existent `productId`, `ProductValidator.validateProductData` validates all supplied parameters *before* verifying if the product exists. If invalid parameters are passed for a non-existent product, an `IllegalArgumentException` is thrown instead of returning `false`.
-- **Expected behavior:** The method should consistently check product existence or return `false` without throwing validation errors for entity updates that do not target a valid record.
-- **Not corrected because:** Modifying exception throwing behavior for non-existent product update requests changes observable API contract responses.
-
-***
-
-# 9. GRASP Audit - Person Module (Extended Services)
-
-**Classes audited:** `PersonService`, `PersonValidator`, `Customer`, `Seller`  
-**Module:** Person Module
-
-## Verdict by pattern
-
-| Pattern | Verdict | Note |
-|---|---|---|
-| Information Expert | Correct | `PersonService` manages domain lists and delegates field validations to `PersonValidator`. |
-| Creator | Correct | `PersonService` creates instances of `Customer` and `Seller` using accessible initialization data. |
-| Controller | Not applicable | No class in this section receives system events. |
-| Low Coupling | Violation (V-22) | `PersonService` is tightly coupled to concrete static validation routines in `PersonValidator`. |
-| High Cohesion | Correct | Responsibilities are separated between entity registration, validation, and retrieval routines. |
-| Polymorphism | Correct | Distinct registration paths exist for `Customer` and `Seller` without using conditional type checks. |
-| Pure Fabrication | Correct | `PersonValidator` isolates validation logic from domain model objects. |
-| Indirection | Correct | `PersonService` acts as an intermediate coordinator between caller interfaces and storage repositories. |
-| Protected Variations | Violation (V-23) | Searching methods rely on returning nullable values directly into external validation routines. |
-
----
-
-## Violations
-
-### V-22
-
-- **ID:** V-22
-- **Pattern:** Low Coupling
-- **Module:** Person Module (`service`)
-- **Evidence:** `PersonService.registerCustomer`, `registerSeller`, `getSellerOrThrow`, and `getCustomerOrThrow`:
-  ```java
-  PersonValidator.validatePersonData(id, name, mail, phone);
-  PersonValidator.validateUniquePerson(customers, id);
-  ...
-  PersonValidator.validatePersonExists(seller, id);
-  ```
-- **Explanation:** `PersonService` invokes static validation methods directly on `PersonValidator`. Static dependencies increase coupling, preventing callers from injecting alternative validation strategies or substituting mock validators in unit tests.
-- **Consequence:** Changing validation behavior or testing registration logic independently from `PersonValidator` requires refactoring hardcoded static class references.
-- **Proposed solution:** Inject an instance-based validator or strategy interface into `PersonService` to decouple validation implementations from service execution.
-- **Other developer's code:** No.
-
-### V-23
-
-- **ID:** V-23
-- **Pattern:** Protected Variations
-- **Module:** Person Module (`service`)
-- **Evidence:** `PersonService.getSellerOrThrow` and `getCustomerOrThrow`:
-  ```java
-  public Seller getSellerOrThrow(String id) {
-      Seller seller = findSeller(id);
-      PersonValidator.validatePersonExists(seller, id);
-      return seller;
-  }
-
-  public Customer getCustomerOrThrow(String id) {
-      Customer customer = findCustomer(id);
-      PersonValidator.validatePersonExists(customer, id);
-      return customer;
-  }
-  ```
-- **Explanation:** `PersonService` retrieves potentially `null` entities via `findSeller(id)` and `findCustomer(id)` and passes them directly into external static validation calls instead of handling optional state safely within the domain lookup logic.
-- **Consequence:** Bypassing `Optional` handling exposes the execution flow to unsafe reference handling and unhandled `NullPointerException` risks if validation order is altered.
-- **Proposed solution:** Modify `findSeller` and `findCustomer` to return `Optional<T>` and leverage `.orElseThrow()` directly inside the lookup methods.
-- **Other developer's code:** No.
-
----
-
-## Functional defects (not corrected in this requirement)
-
-### FD-11
-
-- **Evidence:** `PersonService.registerSeller`:
-  ```java
-  public void registerSeller(String name, String phone, String id,
-                             String employeeCode, String workShift) {
-      PersonValidator.validatePersonData(id, name, null, phone);
-      PersonValidator.validateUniquePerson(sellers, id);
-
-      Seller seller = new Seller(name, phone, id, employeeCode, workShift);
-      sellers.add(seller);
-      repository.saveSeller(sellers);
-  }
-  ```
-- **Observed behavior:** `registerSeller` passes `null` for the email parameter in `PersonValidator.validatePersonData(id, name, null, phone)`. If `PersonValidator` checks for email format or presence without null checks, seller registration throws an unhandled exception; additionally, specific seller attributes (`employeeCode`, `workShift`) are entirely unvalidated prior to entity creation.
-- **Expected behavior:** Specific attributes (`employeeCode`, `workShift`) should undergo explicit validation, and email checks should gracefully handle optional parameters for non-customer entities.
-- **Not corrected because:** Adding extra validation checks for seller attributes alters current exception-throwing guarantees and observable registration output.
-
-### FD-12
-
-- **Evidence:** `PersonService.registerCustomer` and `registerSeller`:
-  ```java
-  PersonValidator.validateUniquePerson(customers, id);
-  ...
-  PersonValidator.validateUniquePerson(sellers, id);
-  ```
-- **Observed behavior:** Uniqueness checks validate `id` independently within `customers` and `sellers` collections. A user can register a `Customer` and a `Seller` sharing the exact same `id`, leading to potential identifier collisions across the system.
-- **Expected behavior:** Entity `id` uniqueness should be enforced globally across all person records (`customers` and `sellers`).
-- **Not corrected because:** Enforcing cross-collection uniqueness changes observable validation behavior for multi-role registration scenarios.
-
-***
+## 14. Revision notes
+
+This version replaces the first draft of the report. Changes:
+
+| Change | Reason |
+|---|---|
+| Removed the five Indirection findings about services depending on concrete repositories | No storage change is foreseeable in the requirements, and the same design is used by every service, so it is not a violation. |
+| Removed the findings about static validators (`ProductService`, `PersonService`) | Req. 6 requires the validators to have static methods; the "solution" would contradict the requirement and change Developer 1's code. |
+| Removed the findings about `orElse(null)` before `validate…Exists` | This is the pattern Req. 6 asks for; there is no observable risk. |
+| Removed the finding about the `WarrantyService` constructor | Its dependencies are exactly the ones required by adjustment A2. |
+| Moved `getWarranties`/`setWarranties` to R-1 | Written by the Technical Lead. |
+| Removed the product module section | `Product`, `Console`, `VideoGame`, `Accessory`, `ProductRepository` and `ProductValidator` belong to Developer 1; only the use of validators and exceptions is audited here. |
+| Merged duplicated findings (customer history; stock restoration; warranty reference resolution) | Same code fragment, recorded once. |
+| Corrected the functional defects | Removed the ones that cannot happen (unused methods, warranties always active inside the 30-day return window, seller email handled by `PersonValidator`) and corrected the description of the warranty loading defect. |
