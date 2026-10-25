@@ -7,7 +7,7 @@
 
 `AccessoryRepository`, `AccessoryService`
 
-
+`PromotionRepository`,`PromotionService`
 ***
 # 2. GRASP Audit - Person Module
 
@@ -224,3 +224,65 @@
 - **Observed behavior:** The method compares the accessory type (for example `"CABLE"`) with the console id, so it returns accessories only when the console id equals a type name. It does not check real compatibility.
 - **Expected behavior:** Return the accessories compatible with the console that has the given id.
 - **Not corrected because:** the fix changes the results the user sees.
+
+# 4. GRASP Audit — Promotion Module
+
+**Classes audited:** `PromotionRepository`, `PromotionService`
+
+## Verdict by pattern
+
+| Pattern | Verdict | Note |
+|---|---|---|
+| Information Expert | Correct | `Promotion` decides whether it is active and what discount it gives; the service works on the list it owns. |
+| Creator | Correct | The service creates each promotion from the data it receives; the repository creates them from the CSV data. |
+| Controller | Not applicable | Neither class receives system events. |
+| Low Coupling | Correct | Both classes depend only on the model and on each other. |
+| High Cohesion | Correct | Persistence stays in the repository and business rules in the service; there is no console output. |
+| Polymorphism | Violation (V-09) | The repository branches on the promotion type. The service already calls `isActive` and `calculateDiscount` polymorphically. |
+| Pure Fabrication | Correct | The repository and the service keep persistence and business rules out of the model. |
+| Indirection | Violation (V-10) | `PromotionService` depends on the concrete CSV repository. |
+| Protected Variations | Correct | `listAllPromotions` returns a copy, and a new discount type needs no change in `PromotionService`. |
+
+---
+
+## Violations
+
+### V-09
+
+- **ID:** V-09
+- **Pattern:** Polymorphism
+- **Module:** `persistence`
+- **Evidence:** `PromotionRepository.toCsvLine` and `fromCsvLine`:
+  ```java
+  if (promotion instanceof BulkPurchaseDiscount bulk) { ... }
+  if (promotion instanceof CategoryDiscount category) { ... }
+  if (promotion instanceof PercentageDiscount percentage) { ... }
+  ...
+  if (BULK_TYPE.equals(type)) { ... }
+  ```
+- **Explanation:** Saving and loading branch on the concrete promotion type, with `instanceof` in one direction and discriminator comparisons in the other.
+- **Consequence:** A new promotion type requires editing `toCsvLine`, `fromCsvLine` and the constants, even though `PromotionService` works with any `Promotion`. A missed branch fails at runtime with `IllegalArgumentException`.
+- **Proposed solution:** Create one small mapper per promotion type (discriminator, promotion to line, line to promotion) and register them by discriminator in the repository, which then delegates to the mapper instead of testing types. The CSV lines stay identical and the model stays free of persistence code.
+- **Other developer's code:** No.
+
+### V-10
+
+- **ID:** V-10
+- **Pattern:** Indirection
+- **Module:** `service`
+- **Evidence:** `PromotionService`:
+  ```java
+  private final PromotionRepository promotionRepository;
+  public PromotionService(PromotionRepository promotionRepository, List<Promotion> promotions)
+  ```
+- **Explanation:** The service depends directly on the concrete class that stores data in a CSV file.
+- **Consequence:** Changing the storage (for example, to a database) requires editing `PromotionService`.
+- **Proposed solution:** Create an interface with `saveAll` and `loadAll`, implement it in `PromotionRepository` and make `PromotionService` depend on the interface.
+- **Other developer's code:** No. Code that passes a `PromotionRepository` keeps compiling.
+
+---
+
+## Functional defects (not corrected in this requirement)
+
+None found in these classes.
+
