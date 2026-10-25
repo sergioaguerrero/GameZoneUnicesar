@@ -7,9 +7,11 @@
 
 `AccessoryRepository`, `AccessoryService`
 
-`PromotionRepository`,`PromotionService`
+`PromotionRepository`, `PromotionService`
 
-`ReturnRepository`,`ReturnService`
+`ReturnRepository`, `ReturnService`
+
+`WarrantyRepository`, `WarrantyRepository`
 ***
 # 2. GRASP Audit - Person Module
 
@@ -401,4 +403,170 @@ None found in these classes.
 - **Expected behavior:** Load sales once before processing lines or handle missing sales gracefully with proper logging.
 - **Not corrected because:** the fix alters performance characteristics or data loading flow.
 
+---
 
+# 6. GRASP Audit - Warranty Module
+
+**Classes audited:** `WarrantyRepository`, `WarrantyService`
+**Module:** `persistence`, `service`
+
+## Verdict by pattern
+
+| Pattern | Verdict | Note |
+|---|---|---|
+| Information Expert | Violation (V-15) | `WarrantyRepository` resolves domain objects (`Product`, `Sale`) while loading CSV data. |
+| Creator | Correct | `WarrantyService` handles the creation of `BasicWarranty` and `ExtendedWarranty` instances. |
+| Controller | Not applicable | No class in the module receives system events. |
+| Low Coupling | Violation (V-16, V-17) | `WarrantyService` directly instantiates external repositories and receives low-level persistence objects in its constructor. |
+| High Cohesion | Correct | `WarrantyService` manages warranty business operations and `WarrantyRepository` handles CSV persistence. |
+| Polymorphism | Correct | No type-based conditionals in the module for business rules. |
+| Pure Fabrication | Correct | `WarrantyRepository` and `WarrantyService` keep persistence and business rules separate from the domain models. |
+| Indirection | Violation (V-18) | `WarrantyService` depends directly on the concrete `WarrantyRepository` implementation. |
+| Protected Variations | Violation (V-19) | Internal state `warranties` is exposed via a mutable getter and setter. |
+
+---
+
+## Violations
+
+### V-15
+
+- **ID:** V-15
+- **Pattern:** Information Expert
+- **Module:** Warranty Module (`persistence`)
+- **Evidence:** `WarrantyRepository.loadAll` and `fromCsvLine`:
+  ```java
+  public List<Warranty> loadAll(List<Sale>sales,List<Product>products) {
+      ...
+      result.add(fromCsvLine(line,sales,products));
+      ...
+  }
+
+  private Warranty fromCsvLine(String line, List<Sale>sales,List<Product>products) {
+      ...
+      for (Product p : products){
+          if (p.getProductId().equals(productId)){
+              product=p;
+          }
+      }
+      for (Sale s : sales){
+          if (s.getId().equals(saleId)){
+              sale=s;
+          }
+      }
+      ...
+  }
+  ```
+- **Explanation:** The persistence layer is performing object reference resolution by iterating over domain lists (`Sale`, `Product`) to assemble rich domain entities. The repository should only focus on reading and writing primitive/DTO data or raw identifiers, leaving reference resolution to the service layer.
+- **Consequence:** `WarrantyRepository` is overly coupled to domain model structures (`Product`, `Sale`) and requires callers to pass full domain collections just to read raw persistence records.
+- **Proposed solution:** Modify `WarrantyRepository` to return raw warranty records/DTOs containing string IDs, and perform the lookup and linking of `Product` and `Sale` within `WarrantyService`.
+- **Other developer's code:** Yes. Callers of `WarrantyRepository.loadAll` in `WarrantyService`.
+
+### V-16
+
+- **ID:** V-16
+- **Pattern:** Low Coupling
+- **Module:** Warranty Module (`service`)
+- **Evidence:** `WarrantyService` constructor:
+  ```java
+  public WarrantyService(WarrantyRepository warrantyRepository,
+                         SaleRepository saleRepository,
+                         ProductService productService,
+                         List<Customer> customers,
+                         List<Seller> sellers) {
+      this.warrantyRepository = warrantyRepository;
+      List<Product> products = productService.listAllProducts();
+      List<Sale> sales = saleRepository.loadSales(customers, sellers, products);
+      this.warranties = warrantyRepository.loadAll(sales, products);
+  }
+  ```
+- **Explanation:** `WarrantyService` directly invokes `SaleRepository` and manages low-level orchestration of `customers` and `sellers` just to rebuild sales and load warranties.
+- **Consequence:** `WarrantyService` is tightly coupled to `SaleRepository`, `Customer`, `Seller`, and `ProductService` during initialization, increasing ripple effects when any of those components change.
+- **Proposed solution:** Pass an already initialized `SaleService` or high-level sales provider to `WarrantyService` instead of rebuilding sales using low-level repositories and raw lists inside `WarrantyService`'s constructor.
+- **Other developer's code:** Yes. Initialization code in `Main` or `ConsoleMenu` that instantiates `WarrantyService`.
+
+### V-17
+
+- **ID:** V-17
+- **Pattern:** Low Coupling
+- **Module:** Warranty Module (`persistence`)
+- **Evidence:** `WarrantyRepository.java`:
+  ```java
+  import com.gamezone.model.*;
+  ```
+  `WarrantyRepository` imports and uses `Sale` and `Product` directly.
+- **Explanation:** A repository class in the persistence module depends on multiple model entities outside its immediate domain responsibility.
+- **Consequence:** Any structural change to `Sale` or `Product` can break `WarrantyRepository` unnecessarily.
+- **Proposed solution:** Remove `Sale` and `Product` dependencies from `WarrantyRepository` by persisting and reading basic field strings (e.g., `productId`, `saleId`).
+- **Other developer's code:** No.
+
+### V-18
+
+- **ID:** V-18
+- **Pattern:** Indirection
+- **Module:** Warranty Module (`service`)
+- **Evidence:** `WarrantyService`:
+  ```java
+  private final WarrantyRepository warrantyRepository;
+  public WarrantyService(WarrantyRepository warrantyRepository, ...)
+  ```
+- **Explanation:** `WarrantyService` depends directly on the concrete class `WarrantyRepository` which manages CSV files.
+- **Consequence:** Replacing CSV persistence with a database or mock implementation requires modifying `WarrantyService`.
+- **Proposed solution:** Introduce an interface `IWarrantyRepository` (or `WarrantyRepository` interface with `WarrantyRepositoryCSV` implementation) and inject the interface into `WarrantyService`.
+- **Other developer's code:** No.
+
+### V-19
+
+- **ID:** V-19
+- **Pattern:** Protected Variations
+- **Module:** Warranty Module (`service`)
+- **Evidence:** `WarrantyService.getWarranties` and `setWarranties`:
+  ```java
+  public List<Warranty> getWarranties() {
+      return warranties;
+  }
+
+  public void setWarranties(List<Warranty> warranties) {
+      this.warranties = warranties;
+  }
+  ```
+- **Explanation:** The internal mutable list `warranties` is directly exposed via a getter, and can be replaced entirely via `setWarranties` without validation.
+- **Consequence:** External classes can mutate the internal state of `WarrantyService` without triggering persistence or obeying business rules.
+- **Proposed solution:** Return an unmodifiable list or defensive copy from `getWarranties()`, and remove `setWarranties()`.
+- **Other developer's code:** To be confirmed (external callers modifying the list directly).
+
+---
+
+## Functional defects (not corrected in this requirement)
+
+### FD-07
+
+- **Evidence:** `WarrantyRepository.fromCsvLine`:
+  ```java
+  for (Product p : products){
+      if (p.getProductId().equals(productId)){
+          product=p;
+      }
+  }
+  for (Sale s : sales){
+      if (s.getId().equals(saleId)){
+          sale=s;
+      }
+  }
+  ```
+- **Observed behavior:** If a `productId` or `saleId` stored in the CSV does not exist in `products` or `sales`, `product` or `sale` remains `null` when creating `ExtendedWarranty` or `BasicWarranty`.
+- **Expected behavior:** Report an error, log a warning, or throw an exception for missing references during CSV parsing.
+- **Not corrected because:** Fixing this behavior alters how invalid or orphaned records are handled during startup.
+
+### FD-08
+
+- **Evidence:** `WarrantyService.cancelWarranties`:
+  ```java
+  if (warranty instanceof ExtendedWarranty) {
+      refundableCost += warranty.getAdditionalCost();
+  }
+  ```
+- **Observed behavior:** Basic warranties are added to `toCancel` list and deleted, but `getAdditionalCost()` is only added for extended warranties. However, if multiple matching warranties exist, all matching ones are removed without checking if they are currently active or already expired.
+- **Expected behavior:** Only active warranties should be cancelled and refunded.
+- **Not corrected because:** Changing cancellation logic modifies observable business output for warranty management.
+
+***
