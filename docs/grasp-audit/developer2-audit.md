@@ -1,9 +1,15 @@
 # GRASP Audit - Developer 2
 ***
 # 1. Scope
-**Classes audited:**`Person`, `Customer`, `Seller`, `PersonRepository`, `PersonService`
+**Classes audited:**
+
+`Person`, `Customer`, `Seller`, `PersonRepository`, `PersonService`
+
+`AccessoryRepository`, `AccessoryService`
+
+
 ***
-# 2. Person Module
+# 2. GRASP Audit - Person Module
 
 **Classes audited:** `Person`, `Customer`, `Seller`, `PersonRepository`, `PersonService`
 **Module:** Person Module
@@ -30,7 +36,7 @@
 
 - **ID:** V-01
 - **Pattern:** Protected Variations
-- **Module:** Person Module — requirement: *[to be completed]*
+- **Module:** Person Module
 - **Evidence:** `Customer`, constructor and getter:
   ```java
   this.purchaseHistory = purchaseHistory;
@@ -46,7 +52,7 @@
 
 - **ID:** V-02
 - **Pattern:** Low Coupling
-- **Module:** Person Module — requirement: *[to be completed]*
+- **Module:** Person Module
 - **Evidence:** `Customer`: `private List<Sale> purchaseHistory;`. The reverse reference exists in `Sale` (`getOriginalSale().getCustomer()` in `ReturnService.viewReturnsByCustomer`), and `SaleRepository.loadSales(customers, sellers, products)` needs the customers to rebuild sales.
 - **Explanation:** `Customer` holds its sales and each `Sale` holds its customer, so the history duplicates data that the list of sales already contains.
 - **Consequence:** The two classes depend on each other and the duplicated relationship can diverge (see FD-01).
@@ -57,7 +63,7 @@
 
 - **ID:** V-03
 - **Pattern:** High Cohesion
-- **Module:** Person Module — requirement: *[to be completed]*
+- **Module:** Person Module
 - **Evidence:** `PersonRepository.deleteCustomer` (`deleteSeller` follows the same structure):
   ```java
   for(Customer c:customers){
@@ -74,7 +80,7 @@
 
 - **ID:** V-04
 - **Pattern:** High Cohesion
-- **Module:** Person Module — requirement: *[to be completed]*
+- **Module:** Person Module
 - **Evidence:** `PersonRepository.saveCustomer` and `loadCustomer` (the same in `saveSeller` and `loadSeller`):
   ```java
   System.out.println("Customers saved successfully in " + customerCSV);
@@ -89,7 +95,7 @@
 
 - **ID:** V-05
 - **Pattern:** Indirection
-- **Module:** Person Module — requirement: *[to be completed]*
+- **Module:** Person Module
 - **Evidence:** `PersonService`:
   ```java
   private final PersonRepository repository;
@@ -128,3 +134,93 @@
 - **Observed behavior:** Lines with another number of fields are silently ignored. Since `split(",")` drops trailing empty fields, a record whose last field is empty is ignored too. The next `saveCustomer` or `saveSeller` rewrites the file without them, so those records are lost.
 - **Expected behavior:** Keep the records or report the invalid line.
 - **Not corrected because:** the fix changes which data is loaded.
+
+***
+
+# 3. GRASP Audit — Accessory Service and Persistence
+
+**Classes audited:** `AccessoryRepository`, `AccessoryService`
+**Module:** `persistence`,`service`
+
+## Verdict by pattern
+
+| Pattern | Verdict | Note |
+|---|---|---|
+| Information Expert | Correct | The service works on the list it owns; the repository only converts the data it receives. |
+| Creator | Correct | The service creates each accessory from the data it receives; the repository creates them from the CSV data. |
+| Controller | Not applicable | Neither class receives system events. |
+| Low Coupling | Correct | Both classes depend only on the model and on each other. |
+| High Cohesion | Correct | Persistence stays in the repository and business rules in the service; there is no console output. |
+| Polymorphism | Violation (V-06, V-07) | Type checks on accessories in the repository and in the stock operations. |
+| Pure Fabrication | Correct | The repository and the service keep persistence and business rules out of the model. |
+| Indirection | Violation (V-08) | `AccessoryService` depends on the concrete CSV repository. |
+| Protected Variations | Correct | `listAllAccessories` returns a copy, so callers cannot modify the internal list. |
+
+---
+
+## Violations
+
+### V-06
+
+- **ID:** V-06
+- **Pattern:** Polymorphism
+- **Module:** `persistence`
+- **Evidence:** `AccessoryRepository.toCsvLine` and `fromCsvLine`:
+  ```java
+  if (a instanceof Cable cable) { ... }
+  if (a instanceof Controller controller) { ... }
+  if (a instanceof Memory memory) { ... }
+  ...
+  if (CABLE_TYPE.equals(type)) { ... }
+  ```
+- **Explanation:** Saving and loading branch on the concrete accessory type, with `instanceof` in one direction and discriminator comparisons in the other.
+- **Consequence:** A new accessory type requires editing `toCsvLine`, `fromCsvLine` and the constants. A missed branch fails at runtime with `IllegalArgumentException`.
+- **Proposed solution:** Create one small mapper per accessory type (discriminator, accessory to line, line to accessory) and register them by discriminator in the repository, which then delegates to the mapper instead of testing types. The CSV lines stay identical and the model stays free of persistence code.
+- **Other developer's code:** No.
+
+### V-07
+
+- **ID:** V-07
+- **Pattern:** Polymorphism
+- **Module:** `service`
+- **Evidence:** `AccessoryService.updateStock` and `restoreStock` repeat the stock operations of `ProductService`, so callers must choose the service by type. In `ReturnService.restoreStockFor`:
+  ```java
+  if (product instanceof Accessory) {
+      accessoryService.restoreStock(product.getProductId(), quantity);
+  } else {
+      productService.restoreStock(product.getProductId(), quantity);
+  }
+  ```
+- **Explanation:** Stock of accessories and of other products is managed by two services without a common interface, so every client that touches inventory has to test the product type.
+- **Consequence:** Each new client (or new product type) repeats the type check, and a missed check updates the wrong inventory or fails.
+- **Proposed solution:** Define a common stock-management interface (`updateStock`, `restoreStock`) implemented by `ProductService` and `AccessoryService`, plus a single entry point that selects the right one, so clients call it without checking the type. Stock results stay the same.
+- **Other developer's code:** Yes. `ReturnService.restoreStockFor` and the sales code that decreases stock (`SaleService`). Owners to be confirmed.
+
+### V-08
+
+- **ID:** V-08
+- **Pattern:** Indirection
+- **Module:** `service`
+- **Evidence:** `AccessoryService`:
+  ```java
+  private final AccessoryRepository accessoryRepository;
+  public AccessoryService(AccessoryRepository accessoryRepository, List<Accessory> accessories)
+  ```
+- **Explanation:** The service depends directly on the concrete class that stores data in a CSV file.
+- **Consequence:** Changing the storage (for example, to a database) requires editing `AccessoryService`.
+- **Proposed solution:** Create an interface with `saveAll` and `loadAll`, implement it in `AccessoryRepository` and make `AccessoryService` depend on the interface.
+- **Other developer's code:** No. Code that passes an `AccessoryRepository` keeps compiling.
+
+---
+
+## Functional defects (not corrected in this requirement)
+
+### FD-04
+
+- **Evidence:** `AccessoryService.findAccessoriesCompatibleWith(String ConsoleId)`:
+  ```java
+  if (a.getAccessoryType().equals(ConsoleId)){
+  ```
+- **Observed behavior:** The method compares the accessory type (for example `"CABLE"`) with the console id, so it returns accessories only when the console id equals a type name. It does not check real compatibility.
+- **Expected behavior:** Return the accessories compatible with the console that has the given id.
+- **Not corrected because:** the fix changes the results the user sees.
