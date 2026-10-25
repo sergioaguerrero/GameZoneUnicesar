@@ -74,3 +74,17 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 4. Controller
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `ProductService` | Use-case controller: `ConsoleMenu` delegates register, list, update and delete to it. |
+| Model, exceptions and validators | Not applicable: they receive no system events. |
+ 
+---
+
+
