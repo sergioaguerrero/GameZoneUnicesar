@@ -8,6 +8,8 @@
 `AccessoryRepository`, `AccessoryService`
 
 `PromotionRepository`,`PromotionService`
+
+`ReturnRepository`,`ReturnService`
 ***
 # 2. GRASP Audit - Person Module
 
