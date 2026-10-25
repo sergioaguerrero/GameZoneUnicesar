@@ -60,3 +60,17 @@ The scope follows the responsibility table of the requirement and the authorship
 | V-02 | Promotions (Req. 2) | `BulkPurchaseDiscount.calculateDiscount`, lines 90–93: loop over `sale.getItems()` adding `getQuantity()` | The total units of a sale is data owned by `Sale`. | The promotion depends on the internal item list of `Sale`. | Add `Sale.getTotalQuantity()` and use it. | Yes: Technical Lead (`Sale`) |
  
 ---
+
+## 3. Creator
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `ProductService.registerVideoGame`, `registerConsole` | The service holds the `products` list and the initialization data. |
+| `ProductRepository.fromCsvLine` | The repository holds the CSV data used to build each product. |
+ 
+---
+
