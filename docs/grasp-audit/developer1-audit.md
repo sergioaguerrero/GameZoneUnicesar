@@ -167,4 +167,27 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 10. Protected Variations
+ 
+| Verdict | Violations |
+|---|---|
+| **Violation** | V-05, V-06, V-07 |
+ 
+**Correctly applied**
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `Product`, `Accessory`, `Promotion`, `Warranty` (abstract) | Protect the system from new subtypes. |
+| `BasicWarranty`, `ExtendedWarranty` | Durations and cost are named constants. |
+ 
+**Violations**
+ 
+| ID | Module | Evidence | Explanation | Consequence | Proposed solution | Other member's code |
+|---|---|---|---|---|---|---|
+| V-05 | Promotions (Req. 2) | `setPercentage` with `percentage < 0 \|\| percentage > 100` in `PercentageDiscount` (lines 46–51), `CategoryDiscount` (68–73), `BulkPurchaseDiscount` (73–78) | One business rule copied in three classes. | Changing the allowed range requires editing three places. | Abstract class `PercentageBasedPromotion` with the field and its validation. | No |
+| V-06 | Returns (Req. 3) | `Sale.canBeReturned`, lines 224–227: `daysSinceSale <= 30` with `LocalDate.now()` | The 30-day policy is a magic number and the reference date is fixed. | Changing the policy or testing with a fixed date requires editing the method. | Constant `RETURN_PERIOD_DAYS` and overload `canBeReturned(LocalDate)`. | No (method by Developer 1 in shared `Sale.java`) |
+| V-07 | Exceptions (Req. 6) | `ResourceNotFoundException.buildMessage`, lines 55–62: `type.endsWith("a")` | Grammatical gender is guessed instead of declared. | "promoción" or "devolución" would print "El promoción … no fue encontrado". | Enum `ResourceType` with article and participle per type. | No |
+ 
+---
+
 
