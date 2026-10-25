@@ -87,4 +87,18 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 5. Low Coupling
+ 
+| Verdict | Violations |
+|---|---|
+| **Violation** | Recorded in V-03 |
+ 
+| Class / method | Observation |
+|---|---|
+| `ProductService` | Correct: depends only on `ProductRepository` and the model. |
+| Validators | Correct: depend only on `model` and `exceptions`. |
+| `CategoryDiscount` | Violation: depends on `VideoGame`, `Console` and `Accessory` only to classify products (see V-03). |
+ 
+---
+
 
