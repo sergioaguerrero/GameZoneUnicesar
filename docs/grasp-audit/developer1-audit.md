@@ -101,4 +101,19 @@ The scope follows the responsibility table of the requirement and the authorship
  
 ---
 
+## 6. High Cohesion
+ 
+| Verdict | Violations |
+|---|---|
+| **Correct** | — |
+ 
+| Class / method | Why it is correct |
+|---|---|
+| `Product` and subclasses | Hold product data and stock rules only. |
+| `ProductRepository` | Handles only CSV persistence. |
+| Promotion and warranty subclasses | Each one holds a single rule. |
+| `Return.generateReturnReceipt`, `Warranty.generateWarrantyCertificate` | Assigned to these classes by Req. 3, Req. 4 and A5; they use only their own data. |
+ 
+---
+
 
