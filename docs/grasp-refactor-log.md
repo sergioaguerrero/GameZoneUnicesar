@@ -85,6 +85,9 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | Product | Added category constants and abstract getCategory() so each product type declares its own category | V-03 | Polymorphism | 6901c66 | Isaac Mattos (Dev 1) |
 | VideoGame, Console, Accessory | Implemented getCategory() returning their category code (Controller, Cable and Memory inherit it from Accessory) | V-03 | Polymorphism | 6901c66 | Isaac Mattos (Dev 1) |
 | CategoryDiscount | Replaced the instanceof checks in belongsToTargetCategory() with a comparison against product.getCategory() | V-03 | Polymorphism | 6901c66 | Isaac Mattos (Dev 1) |
+| ProductCsvMapper | New interface: each product type converts its own type-specific CSV columns to text and back | V-04 | Polymorphism | 529399a | Isaac Mattos (Dev 1) |
+| VideoGameCsvMapper, ConsoleCsvMapper | New mappers that write and read the platform/genre/age rating and brand/model/generation columns | V-04 | Pure Fabrication | 529399a | Isaac Mattos (Dev 1) |
+| ProductRepository | Replaced the instanceof checks in toCsvLine() and the type comparisons in fromCsvLine() with a mapper registry selected by product category; CSV content is unchanged | V-04 | Polymorphism | 529399a | Isaac Mattos (Dev 1) |
 
 ---
 
