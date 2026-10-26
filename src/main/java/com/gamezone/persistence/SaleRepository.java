@@ -14,7 +14,24 @@ import java.util.List;
  * Handles file-based persistence for Sale objects using a CSV format.
  */
 public class SaleRepository {
-    private static final String saleCSV = "data/sales.csv";
+    private static final String DEFAULT_SALE_CSV = "data/sales.csv";
+    private final String saleCSV;
+
+    /**
+     * Constructs a SaleRepository using the default file path {@code data/sales.csv}.
+     */
+    public SaleRepository() {
+        this(DEFAULT_SALE_CSV);
+    }
+
+    /**
+     * Constructs a SaleRepository using a custom file storage path.
+     *
+     * @param saleCSV the CSV file path for sales persistence
+     */
+    public SaleRepository(String saleCSV) {
+        this.saleCSV = saleCSV != null ? saleCSV : DEFAULT_SALE_CSV;
+    }
 
     /**
      * Serializes a Sale object into a CSV formatted text line with the format
@@ -53,7 +70,6 @@ public class SaleRepository {
                 writer.write(saleLine(sale));
                 writer.newLine();
             }
-            System.out.println("Sales saved successfully in " + saleCSV);
         } catch (IOException e) {
             throw new PersistenceException(
                     "Error de escritura: no se pudieron guardar las ventas en " + saleCSV, e);
@@ -137,7 +153,6 @@ public class SaleRepository {
                     sales.add(sale);
                 }
             }
-            System.out.println("Sales successfully loaded from " + saleCSV);
         } catch (IOException e) {
             throw new PersistenceException(
                     "Error de lectura: no se pudieron cargar las ventas desde " + saleCSV, e);
