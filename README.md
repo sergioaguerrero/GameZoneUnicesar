@@ -125,7 +125,7 @@ flowchart TD
 
 As part of Requirement 6 (**Validations and Exceptions**), the system incorporates two new architectural packages to establish a robust, fail-fast error management and domain validation strategy: com.gamezone.exceptions and com.gamezone.validation.
 
-`mermaid
+```mermaid
 flowchart LR
     subgraph UI ["UI Layer (com.gamezone.ui)"]
         CM["ConsoleMenu"]
@@ -168,7 +168,7 @@ flowchart LR
     GZE --- BRE
     GZE --- IDE
     GZE --- PE
-`
+```
 
 ### Purpose of the Exception Layer (com.gamezone.exceptions)
 
@@ -176,7 +176,9 @@ The exception layer establishes a unified, strongly typed domain exception hiera
 
 1. **ResourceNotFoundException (RESOURCE_NOT_FOUND):**
    * **Purpose:** Thrown when a queried entity (product, customer, seller, sale) does not exist in the system.
-   * **Attributes:** Encapsulates the specific esourceType and esourceId, formatting natural-language Spanish messages with correct grammatical gender.
+   * **Attributes:** Encapsulates the specific 
+esourceType and 
+esourceId, formatting natural-language Spanish messages with correct grammatical gender.
 2. **BusinessRuleException (BUSINESS_RULE):**
    * **Purpose:** Thrown when an operation violates a business invariant (e.g., attempting to sell more items than currently in stock, registering a duplicate person ID, or submitting a sale with an empty product list).
 3. **InvalidDataException (INVALID_DATA):**
