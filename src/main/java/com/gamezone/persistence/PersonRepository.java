@@ -51,7 +51,6 @@ public class PersonRepository {
                 writer.write(customerLine(c));
                 writer.newLine();
             }
-            System.out.println("Customers saved successfully in " + customerCSV);
         } catch (IOException e) {
             throw new PersistenceException(
                     "Error de escritura: no se pudieron guardar los clientes en " + customerCSV, e);
@@ -85,7 +84,6 @@ public class PersonRepository {
                     customers.add(customer);
                 }
             }
-            System.out.println("Data successfully loaded from " + customerCSV);
         } catch (IOException e) {
             throw new PersistenceException(
                     "Error de lectura: no se pudieron cargar los clientes desde " + customerCSV, e);
@@ -106,7 +104,6 @@ public class PersonRepository {
                 writer.write(sellerLine(s));
                 writer.newLine();
             }
-            System.out.println("Sellers saved successfully in " + sellerCSV);
         } catch (IOException e) {
             throw new PersistenceException(
                     "Error de escritura: no se pudieron guardar los vendedores en " + sellerCSV, e);
@@ -141,7 +138,6 @@ public class PersonRepository {
                     sellers.add(seller);
                 }
             }
-            System.out.println("Data successfully loaded from " + sellerCSV);
         } catch (IOException e) {
             throw new PersistenceException(
                     "Error de lectura: no se pudieron cargar los vendedores desde " + sellerCSV, e);
