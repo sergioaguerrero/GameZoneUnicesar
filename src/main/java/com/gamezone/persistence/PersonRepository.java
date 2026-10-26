@@ -149,33 +149,4 @@ public class PersonRepository {
 
         return sellers;
     }
-
-    /**
-     * Deletes a seller matching the given ID from the list and updates the storage.
-     *
-     * @param sellers The current list of sellers.
-     * @param id      The identification of the seller to delete.
-     * @throws PersistenceException if the updated list cannot be written.
-     */
-    public void deleteSeller(List<Seller> sellers,String id){
-        for (Seller s:sellers){
-            sellers.remove(s);
-            saveSeller(sellers);
-            break;
-        }
-    }
-
-    /**
-     * Deletes a customer matching the given ID from the list and updates the storage.
-     *
-     * @param customers The current list of customers.
-     * @param id        The identification of the customer to delete.
-     * @throws PersistenceException if the updated list cannot be written.
-     */
-    public void deleteCustomer(List<Customer> customers,String id){
-        for(Customer c:customers){
-            customers.remove(c);
-            saveCustomer(customers);
-        }
-    }
 }
