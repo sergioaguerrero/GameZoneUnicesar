@@ -1,9 +1,9 @@
 package com.gamezone.model;
-
+ 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+ 
 /**
  * Abstract base class that represents an accessory commercialized by
  * GameZone Unicesar.
@@ -18,9 +18,9 @@ import java.util.List;
  * full description.
  */
 public abstract class Accessory extends Product {
-
+ 
     private List<Console> compatibleConsoles;
-
+ 
     /**
      * Creates a new accessory with the given common product attributes.
      *
@@ -33,7 +33,7 @@ public abstract class Accessory extends Product {
         super(productId, title, price, stockQuantity);
         this.compatibleConsoles = new ArrayList<>();
     }
-
+ 
     /**
      * Returns the list of consoles compatible with this accessory.
      *
@@ -45,7 +45,7 @@ public abstract class Accessory extends Product {
     public List<Console> getCompatibleConsoles() {
         return Collections.unmodifiableList(compatibleConsoles);
     }
-
+ 
     /**
      * Replaces the list of consoles compatible with this accessory.
      *
@@ -62,7 +62,7 @@ public abstract class Accessory extends Product {
             }
         }
     }
-
+ 
     /**
      * Adds a console to the list of compatible consoles.
      *
@@ -76,7 +76,7 @@ public abstract class Accessory extends Product {
             compatibleConsoles.add(console);
         }
     }
-
+ 
     /**
      * Removes a console from the list of compatible consoles.
      *
@@ -90,7 +90,7 @@ public abstract class Accessory extends Product {
         return compatibleConsoles.removeIf(
                 registered -> registered.getProductId().equals(console.getProductId()));
     }
-
+ 
     /**
      * Checks whether this accessory is compatible with the given console.
      *
@@ -100,14 +100,14 @@ public abstract class Accessory extends Product {
     public boolean isCompatibleWith(Console console) {
         return console != null && containsConsole(console);
     }
-
+ 
     /**
      * Returns the specific type of this accessory.
      *
      * @return the accessory type
      */
     public abstract String getAccessoryType();
-
+ 
     /**
      * Validates that a text attribute is neither null nor blank.
      *
@@ -122,7 +122,7 @@ public abstract class Accessory extends Product {
         }
         return value.trim();
     }
-
+ 
     /**
      * Checks whether a console with the same product identifier is already
      * registered as compatible.
@@ -137,5 +137,15 @@ public abstract class Accessory extends Product {
             }
         }
         return false;
+    }
+ 
+    /**
+     * Returns the category code shared by every accessory.
+     *
+     * @return {@link Product#CATEGORY_ACCESSORY}
+     */
+    @Override
+    public String getCategory() {
+        return CATEGORY_ACCESSORY;
     }
 }

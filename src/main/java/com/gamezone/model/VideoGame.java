@@ -1,16 +1,16 @@
 package com.gamezone.model;
-
+ 
 /**
  * Represents a video game product. Extends {@link Product} adding the
  * characteristics specific to this type of product: platform, genre and
  * recommended age rating.
  */
 public class VideoGame extends Product {
-
+ 
     private String platform;
     private String genre;
     private String ageRating;
-
+ 
     /**
      * Creates a new video game.
      *
@@ -29,7 +29,7 @@ public class VideoGame extends Product {
         this.genre = genre;
         this.ageRating = ageRating;
     }
-
+ 
     /**
      * Returns the platform the game was developed for.
      *
@@ -38,7 +38,7 @@ public class VideoGame extends Product {
     public String getPlatform() {
         return platform;
     }
-
+ 
     /**
      * Sets the platform the game was developed for.
      *
@@ -47,7 +47,7 @@ public class VideoGame extends Product {
     public void setPlatform(String platform) {
         this.platform = platform;
     }
-
+ 
     /**
      * Returns the genre of the game.
      *
@@ -56,7 +56,7 @@ public class VideoGame extends Product {
     public String getGenre() {
         return genre;
     }
-
+ 
     /**
      * Sets the genre of the game.
      *
@@ -65,7 +65,7 @@ public class VideoGame extends Product {
     public void setGenre(String genre) {
         this.genre = genre;
     }
-
+ 
     /**
      * Returns the recommended age rating of the game.
      *
@@ -74,7 +74,7 @@ public class VideoGame extends Product {
     public String getAgeRating() {
         return ageRating;
     }
-
+ 
     /**
      * Sets the recommended age rating of the game.
      *
@@ -83,7 +83,7 @@ public class VideoGame extends Product {
     public void setAgeRating(String ageRating) {
         this.ageRating = ageRating;
     }
-
+ 
     /**
      * Builds a full description of the video game combining the common
      * product attributes with its platform, genre and age rating.
@@ -95,5 +95,15 @@ public class VideoGame extends Product {
         return String.format(
                 "[Video Game] %s | Platform: %s | Genre: %s | Age Rating: %s | Price: $%.2f | Stock: %d",
                 getTitle(), platform, genre, ageRating, getPrice(), getStockQuantity());
+    }
+ 
+    /**
+     * Returns the category code of video games.
+     *
+     * @return {@link Product#CATEGORY_VIDEOGAME}
+     */
+    @Override
+    public String getCategory() {
+        return CATEGORY_VIDEOGAME;
     }
 }

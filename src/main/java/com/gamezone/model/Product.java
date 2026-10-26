@@ -1,5 +1,5 @@
 package com.gamezone.model;
-
+ 
 /**
  * Abstract base class that represents a general product commercialized by
  * GameZone Unicesar. Holds the attributes and behavior common to every product
@@ -9,12 +9,27 @@ package com.gamezone.model;
  * {@link #getFullDescription()}.
  */
 public abstract class Product {
-
+ 
+    /**
+     * Category code of video games.
+     */
+    public static final String CATEGORY_VIDEOGAME = "VIDEOGAME";
+ 
+    /**
+     * Category code of consoles.
+     */
+    public static final String CATEGORY_CONSOLE = "CONSOLE";
+ 
+    /**
+     * Category code of accessories.
+     */
+    public static final String CATEGORY_ACCESSORY = "ACCESSORY";
+ 
     private String productId;
     private String title;
     private double price;
     private int stockQuantity;
-
+ 
     /**
      * Creates a new product with the given common attributes.
      *
@@ -29,7 +44,7 @@ public abstract class Product {
         this.price = price;
         this.stockQuantity = stockQuantity;
     }
-
+ 
     /**
      * Returns the unique identifier of the product.
      *
@@ -38,7 +53,7 @@ public abstract class Product {
     public String getProductId() {
         return productId;
     }
-
+ 
     /**
      * Sets the unique identifier of the product.
      *
@@ -47,7 +62,7 @@ public abstract class Product {
     public void setProductId(String productId) {
         this.productId = productId;
     }
-
+ 
     /**
      * Returns the title of the product.
      *
@@ -56,7 +71,7 @@ public abstract class Product {
     public String getTitle() {
         return title;
     }
-
+ 
     /**
      * Sets the title of the product.
      *
@@ -65,7 +80,7 @@ public abstract class Product {
     public void setTitle(String title) {
         this.title = title;
     }
-
+ 
     /**
      * Returns the unit price of the product.
      *
@@ -74,7 +89,7 @@ public abstract class Product {
     public double getPrice() {
         return price;
     }
-
+ 
     /**
      * Sets the unit price of the product.
      *
@@ -83,7 +98,7 @@ public abstract class Product {
     public void setPrice(double price) {
         this.price = price;
     }
-
+ 
     /**
      * Returns the quantity currently available in inventory.
      *
@@ -92,7 +107,7 @@ public abstract class Product {
     public int getStockQuantity() {
         return stockQuantity;
     }
-
+ 
     /**
      * Sets the quantity available in inventory.
      *
@@ -101,7 +116,7 @@ public abstract class Product {
     public void setStockQuantity(int stockQuantity) {
         this.stockQuantity = stockQuantity;
     }
-
+ 
     /**
      * Checks whether there is enough stock available for the given quantity.
      *
@@ -111,7 +126,7 @@ public abstract class Product {
     public boolean hasEnoughStock(int quantity) {
         return quantity > 0 && this.stockQuantity >= quantity;
     }
-
+ 
     /**
      * Decreases the available stock by the given quantity. Should only be
      * called after verifying with {@link #hasEnoughStock(int)} that enough
@@ -137,7 +152,7 @@ public abstract class Product {
     public void increaseStock(int quantity){
         this.stockQuantity += quantity;
     }
-
+ 
     /**
      * Builds a complete description of the product that integrates the common
      * attributes with the specific characteristics of each concrete subclass.
@@ -147,4 +162,14 @@ public abstract class Product {
      * @return the full description of the product
      */
     public abstract String getFullDescription();
+ 
+    /**
+     * Returns the category code of this product. Promotions and other
+     * collaborators use it to tell product types apart without checking the
+     * concrete class.
+     *
+     * @return the category code: {@link #CATEGORY_VIDEOGAME},
+     * {@link #CATEGORY_CONSOLE} or {@link #CATEGORY_ACCESSORY}
+     */
+    public abstract String getCategory();
 }

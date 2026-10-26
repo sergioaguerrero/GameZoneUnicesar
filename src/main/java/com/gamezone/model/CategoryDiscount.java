@@ -1,7 +1,7 @@
 package com.gamezone.model;
-
+ 
 import java.time.LocalDate;
-
+ 
 /**
  * Represents a category discount promotion commercialized by GameZone Unicesar.
  *
@@ -10,25 +10,25 @@ import java.time.LocalDate;
  * the sale. Products of any other category are not affected.
  */
 public class CategoryDiscount extends Promotion {
-
+ 
     /**
      * Category eligible for a video game discount.
      */
-    public static final String CATEGORY_VIDEOGAME = "VIDEOGAME";
-
+    public static final String CATEGORY_VIDEOGAME = Product.CATEGORY_VIDEOGAME;
+ 
     /**
      * Category eligible for a console discount.
      */
-    public static final String CATEGORY_CONSOLE = "CONSOLE";
-
+    public static final String CATEGORY_CONSOLE = Product.CATEGORY_CONSOLE;
+ 
     /**
      * Category eligible for an accessory discount.
      */
-    public static final String CATEGORY_ACCESSORY = "ACCESSORY";
-
+    public static final String CATEGORY_ACCESSORY = Product.CATEGORY_ACCESSORY;
+ 
     private double percentage;
     private String targetCategory;
-
+ 
     /**
      * Creates a new category discount promotion.
      *
@@ -48,7 +48,7 @@ public class CategoryDiscount extends Promotion {
         setPercentage(percentage);
         setTargetCategory(targetCategory);
     }
-
+ 
     /**
      * Returns the discount percentage.
      *
@@ -57,7 +57,7 @@ public class CategoryDiscount extends Promotion {
     public double getPercentage() {
         return percentage;
     }
-
+ 
     /**
      * Sets the discount percentage.
      *
@@ -71,7 +71,7 @@ public class CategoryDiscount extends Promotion {
         }
         this.percentage = percentage;
     }
-
+ 
     /**
      * Returns the category this discount applies to.
      *
@@ -80,7 +80,7 @@ public class CategoryDiscount extends Promotion {
     public String getTargetCategory() {
         return targetCategory;
     }
-
+ 
     /**
      * Sets the category this discount applies to.
      *
@@ -99,7 +99,7 @@ public class CategoryDiscount extends Promotion {
         }
         this.targetCategory = targetCategory;
     }
-
+ 
     /**
      * Calculates the discount as the configured percentage applied only to the
      * subtotal of the products that belong to the target category.
@@ -117,7 +117,7 @@ public class CategoryDiscount extends Promotion {
         }
         return categorySubtotal * percentage / 100;
     }
-
+ 
     /**
      * Checks whether the given product belongs to this promotion's target
      * category.
@@ -127,12 +127,6 @@ public class CategoryDiscount extends Promotion {
      * otherwise
      */
     private boolean belongsToTargetCategory(Product product) {
-        if (CATEGORY_VIDEOGAME.equals(targetCategory)) {
-            return product instanceof VideoGame;
-        }
-        if (CATEGORY_CONSOLE.equals(targetCategory)) {
-            return product instanceof Console;
-        }
-        return product instanceof Accessory;
+        return targetCategory.equals(product.getCategory());
     }
 }

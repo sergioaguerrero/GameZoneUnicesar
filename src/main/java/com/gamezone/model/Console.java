@@ -1,16 +1,16 @@
 package com.gamezone.model;
-
+ 
 /**
  * Represents a game console product. Extends {@link Product} adding the
  * characteristics specific to this type of product: brand, model and
  * generation.
  */
 public class Console extends Product {
-
+ 
     private String brand;
     private String model;
     private int generation;
-
+ 
     /**
      * Creates a new console.
      *
@@ -29,7 +29,7 @@ public class Console extends Product {
         this.model = model;
         this.generation = generation;
     }
-
+ 
     /**
      * Returns the brand of the console.
      *
@@ -38,7 +38,7 @@ public class Console extends Product {
     public String getBrand() {
         return brand;
     }
-
+ 
     /**
      * Sets the brand of the console.
      *
@@ -47,7 +47,7 @@ public class Console extends Product {
     public void setBrand(String brand) {
         this.brand = brand;
     }
-
+ 
     /**
      * Returns the model of the console.
      *
@@ -56,7 +56,7 @@ public class Console extends Product {
     public String getModel() {
         return model;
     }
-
+ 
     /**
      * Sets the model of the console.
      *
@@ -65,7 +65,7 @@ public class Console extends Product {
     public void setModel(String model) {
         this.model = model;
     }
-
+ 
     /**
      * Returns the generation number of the console.
      *
@@ -74,7 +74,7 @@ public class Console extends Product {
     public int getGeneration() {
         return generation;
     }
-
+ 
     /**
      * Sets the generation number of the console.
      *
@@ -83,7 +83,7 @@ public class Console extends Product {
     public void setGeneration(int generation) {
         this.generation = generation;
     }
-
+ 
     /**
      * Builds a full description of the console combining the common
      * product attributes with its brand, model and generation.
@@ -95,5 +95,15 @@ public class Console extends Product {
         return String.format(
                 "[Console] %s | Brand: %s | Model: %s | Generation: %d | Price: $%.2f | Stock: %d",
                 getTitle(), brand, model, generation, getPrice(), getStockQuantity());
+    }
+ 
+    /**
+     * Returns the category code of consoles.
+     *
+     * @return {@link Product#CATEGORY_CONSOLE}
+     */
+    @Override
+    public String getCategory() {
+        return CATEGORY_CONSOLE;
     }
 }
