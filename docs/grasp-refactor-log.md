@@ -90,6 +90,7 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | ProductRepository | Replaced the instanceof checks in toCsvLine() and the type comparisons in fromCsvLine() with a mapper registry selected by product category; CSV content is unchanged | V-04 | Polymorphism | 529399a | Isaac Mattos (Dev 1) |
 | PercentageBasedPromotion | New abstract class that holds the percentage field, its 0-100 validation and applyPercentage() for all percentage-based promotions | V-05 | Protected Variations | 2e538c7 | Isaac Mattos (Dev 1) |
 | PercentageDiscount, CategoryDiscount, BulkPurchaseDiscount | Now extend PercentageBasedPromotion; removed their duplicated percentage field, getter, setter and validation | V-05 | Protected Variations | 2e538c7 | Isaac Mattos (Dev 1) |
+| BulkPurchaseDiscount | calculateDiscount() now asks the sale for its total units with Sale.getTotalQuantity() instead of iterating the sale items | V-02 | Information Expert | HASH | Isaac Mattos (Dev 1) |
 
 ---
 
