@@ -96,6 +96,7 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | ResourceType | New enum that declares, for each resource type, its Spanish noun with article and the participle that agrees with it | V-07 | Protected Variations | 892cd30 | Isaac Mattos (Dev 1) |
 | ResourceNotFoundException | Now receives a ResourceType and builds its message from the declared article and participle instead of guessing the gender with endsWith("a"); messages are unchanged | V-07 | Protected Variations | 892cd30 | Isaac Mattos (Dev 1) |
 | ProductValidator, PersonValidator, SaleValidator | Now throw ResourceNotFoundException with ResourceType.PRODUCT, PERSON and SALE instead of a text type | V-07 | Protected Variations | 892cd30 | Isaac Mattos (Dev 1) |
+| Customer | Removed unused purchaseHistory collection, constructor with history, getPurchaseHistory() and addPurchaseHistory() to eliminate dead bidirectional coupling with Sale | V-01 | Low Coupling | 1440a81c | Jhonatan Galindo (Dev 2) |
 
 ---
 
