@@ -1,27 +1,28 @@
 package com.gamezone.validation;
-
+ 
 import com.gamezone.exceptions.BusinessRuleException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.ResourceNotFoundException;
+import com.gamezone.exceptions.ResourceType;
 import com.gamezone.model.Customer;
 import com.gamezone.model.Product;
 import com.gamezone.model.Sale;
 import com.gamezone.model.Seller;
 import java.util.List;
-
+ 
 /**
  * Validation rules for the sale module. Services call these methods before
  * running any business operation; each method throws the matching custom
  * exception when a rule is not met.
  */
 public final class SaleValidator {
-
+ 
     /**
      * Prevents instantiation: this class only exposes static methods.
      */
     private SaleValidator() {
     }
-
+ 
     /**
      * Validates the data required to register a sale.
      * <p>
@@ -45,7 +46,7 @@ public final class SaleValidator {
             throw new BusinessRuleException("La venta debe contener al menos un producto");
         }
     }
-
+ 
     /**
      * Validates that a sale found by its identifier exists.
      *
@@ -55,7 +56,7 @@ public final class SaleValidator {
      */
     public static void validateSaleExists(Sale sale, String saleId) {
         if (sale == null) {
-            throw new ResourceNotFoundException("venta", saleId);
+            throw new ResourceNotFoundException(ResourceType.SALE, saleId);
         }
     }
 }

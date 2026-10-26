@@ -1,23 +1,24 @@
 package com.gamezone.validation;
-
+ 
 import com.gamezone.exceptions.BusinessRuleException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.ResourceNotFoundException;
+import com.gamezone.exceptions.ResourceType;
 import com.gamezone.model.Product;
-
+ 
 /**
  * Validation rules for the product module. Services call these methods before
  * running any business operation; each method throws the matching custom
  * exception when a rule is not met.
  */
 public final class ProductValidator {
-
+ 
     /**
      * Prevents instantiation: this class only exposes static methods.
      */
     private ProductValidator() {
     }
-
+ 
     /**
      * Validates the basic data of a product.
      *
@@ -41,7 +42,7 @@ public final class ProductValidator {
             throw new InvalidDataException("stock", "no puede ser negativo");
         }
     }
-
+ 
     /**
      * Validates that a product has enough stock for the requested quantity.
      *
@@ -56,7 +57,7 @@ public final class ProductValidator {
                     product.getTitle(), product.getStockQuantity(), requestedQuantity));
         }
     }
-
+ 
     /**
      * Validates that a product found by its identifier exists.
      *
@@ -66,7 +67,7 @@ public final class ProductValidator {
      */
     public static void validateProductExists(Product product, String productId) {
         if (product == null) {
-            throw new ResourceNotFoundException("producto", productId);
+            throw new ResourceNotFoundException(ResourceType.PRODUCT, productId);
         }
     }
 }

@@ -1,24 +1,25 @@
 package com.gamezone.validation;
-
+ 
 import com.gamezone.exceptions.BusinessRuleException;
 import com.gamezone.exceptions.InvalidDataException;
 import com.gamezone.exceptions.ResourceNotFoundException;
+import com.gamezone.exceptions.ResourceType;
 import com.gamezone.model.Person;
 import java.util.List;
-
+ 
 /**
  * Validation rules for the person module (customers and sellers). Services call
  * these methods before running any business operation; each method throws the
  * matching custom exception when a rule is not met.
  */
 public final class PersonValidator {
-
+ 
     /**
      * Prevents instantiation: this class only exposes static methods.
      */
     private PersonValidator() {
     }
-
+ 
     /**
      * Validates the basic data of a person.
      * <p>
@@ -46,7 +47,7 @@ public final class PersonValidator {
             throw new InvalidDataException("correo", "debe tener un formato válido (ejemplo: nombre@dominio.com)");
         }
     }
-
+ 
     /**
      * Validates that a person found by its identifier exists.
      *
@@ -56,10 +57,10 @@ public final class PersonValidator {
      */
     public static void validatePersonExists(Person person, String personId) {
         if (person == null) {
-            throw new ResourceNotFoundException("persona", personId);
+            throw new ResourceNotFoundException(ResourceType.PERSON, personId);
         }
     }
-
+ 
     /**
      * Validates that no registered person already uses the given identifier.
      * <p>
@@ -78,7 +79,7 @@ public final class PersonValidator {
             }
         }
     }
-
+ 
     /**
      * Checks that an email is not blank, has text before the "@", and has a "."
      * in the domain part that is neither its first nor its last character.
