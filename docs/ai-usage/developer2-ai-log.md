@@ -121,7 +121,7 @@ Qué hace el patrón `Collections.unmodifiableList(customers)` en métodos como 
 Devuelve una vista de solo lectura de la lista interna, lanzando `UnsupportedOperationException` si se intenta modificar desde fuera de la clase.
 
 **Lección clave o aplicación:**
-Es una técnica de **encapsulamiento**: protege el estado interno (`customers`, `sellers`) para que solo pueda modificarse a través de los métodos propios de la clase (como `saveCustomer`), evitando alteraciones no controladas desde el exterior.
+Es una técnica de **encapsulamiento**: protege el estado interno (`customers`, `sellers`) para que solo pueda modificarse a través de los métodos propios de la clase (como `saveCustomer`), evitando alterations no controladas desde el exterior.
 
 ---
 
@@ -161,6 +161,24 @@ Se agrega un campo inicial en cada línea del CSV (`CABLE`, `CONTROLLER`, `MEMOR
 
 **Lección clave o aplicación:**
 Es el equivalente "hecho a mano" del patrón *single table inheritance*: resuelve el problema de **persistir polimorfismo** en un formato plano que, por sí solo, no distingue tipos. Se integra directamente en `AccessoryRepository.toCsvLine()`/`fromCsvLine()` y `ProductRepository.toCsvLine()`/`fromCsvLine()`, permitiendo que una jerarquía de clases (`Accessory`, `Product`) se guarde y reconstruya correctamente desde un único archivo CSV.
+
+---
+
+## 13. Identificación y aplicación de principios GRASP en clases
+
+**Pregunta o problema planteado:**
+Qué son los principios GRASP y cómo se pueden identificar y aplicar sistemáticamente en el diseño de clases, servicios y repositorios de un sistema orientado a objetos.
+
+**Solución técnica sugerida:**
+- **Definición conceptual:** GRASP (*General Responsibility Assignment Software Patterns*) proporciona directrices para asignar responsabilidades (métodos, atributos y lógica) a las clases y objetos correctos.
+- **Criterios de identificación y evaluación en clases:**
+    - **Information Expert:** Identificar qué clase posee los datos necesarios para realizar una operación y asignarle la responsabilidad a ella (ej. verificar si una clase de servicio o el propio modelo gestiona su lógica).
+    - **Creator:** Analizar qué clase debe ser responsable de instanciar un nuevo objeto (ej. comprobar si una factoría o servicio crea los objetos usando datos disponibles).
+    - **High Cohesion & Low Coupling:** Detectar cuando una clase asume responsabilidades ajenas (como una clase de persistencia escribiendo en consola o manipulando listas de negocio) y desacoplar componentes mediante capas definidas (`model`, `service`, `persistence`).
+    - **Indirection & Protected Variations:** Identificar dependencias directas de clases concretas (ej. servicios acoplados a repositorios CSV) y proponer interfaces o mecanismos de encapsulamiento (como `Collections.unmodifiableList` o interfaces de repositorio) para aislar los cambios estructurales.
+
+**Lección clave o aplicación:**
+Los principios GRASP sirven como marco de auditoría formal para evaluar la calidad del código, detectar violaciones arquitectónicas (como acoplamiento excesivo o baja cohesión) y guiar refactorizaciones limpias y mantenibles en módulos complejos.
 
 ---
 
