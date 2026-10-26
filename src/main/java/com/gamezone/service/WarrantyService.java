@@ -204,21 +204,4 @@ public class WarrantyService {
         return warrantyRepository;
     }
 
-    /**
-     * Gets the current in-memory list of warranties.
-     *
-     * @return the list of warranties
-     */
-    public List<Warranty> getWarranties() {
-        return warranties;
-    }
-
-    /**
-     * Sets the in-memory list of warranties.
-     *
-     * @param warranties the new list of warranties
-     */
-    public void setWarranties(List<Warranty> warranties) {
-        this.warranties = warranties;
-    }
 }
