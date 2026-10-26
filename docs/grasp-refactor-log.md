@@ -77,7 +77,11 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 
 | Class | Change Description | Violation ID | Pattern Applied | Commit / PR | Assigned Member |
 |---|---|---|---|---|---|
-| *(Pending refactoring)* | *(To be logged during correction commits)* | — | — | — | — |
+| Sale | Implemented getDiscountRatio() providing proportional discount calculation to unblock Return | V-01 | Information Expert | 0897236 | Sergio Guerrero (Tech Lead) |
+| Sale | Implemented getTotalQuantity() aggregating units purchased across items to unblock BulkPurchaseDiscount | V-02 | Information Expert | 0897236 | Sergio Guerrero (Tech Lead) |
+| WarrantyService | Removed unused getWarranties() and setWarranties() to protect internal mutable state | V-17 | Low Coupling | cd3e2a3 | Sergio Guerrero (Tech Lead) |
+| SaleRepository | Removed console output messages (System.out.println) from saveSales and loadSales | V-18 | High Cohesion | 9c06809 | Sergio Guerrero (Tech Lead) |
+| SaleRepository | Replaced hardcoded file path constant with default and parameterized constructors | V-21 | Protected Variations | 9c06809 | Sergio Guerrero (Tech Lead) |
 
 ---
 
