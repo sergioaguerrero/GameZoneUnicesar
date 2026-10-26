@@ -91,6 +91,8 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | PercentageBasedPromotion | New abstract class that holds the percentage field, its 0-100 validation and applyPercentage() for all percentage-based promotions | V-05 | Protected Variations | 2e538c7 | Isaac Mattos (Dev 1) |
 | PercentageDiscount, CategoryDiscount, BulkPurchaseDiscount | Now extend PercentageBasedPromotion; removed their duplicated percentage field, getter, setter and validation | V-05 | Protected Variations | 2e538c7 | Isaac Mattos (Dev 1) |
 | BulkPurchaseDiscount | calculateDiscount() now asks the sale for its total units with Sale.getTotalQuantity() instead of iterating the sale items | V-02 | Information Expert | d56aeb9 | Isaac Mattos (Dev 1) |
+| Return | calculateItemRefund() now uses Sale.getDiscountRatio() instead of combining the sale subtotal and discount itself | V-01 | Information Expert | HASH | Isaac Mattos (Dev 1) |
+
 ---
 
 ## 4. Final Post-Refactor Verification Evidence
