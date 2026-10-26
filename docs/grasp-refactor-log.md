@@ -100,7 +100,7 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | PersonRepository | Removed unused deleteSeller() and deleteCustomer() methods to keep persistence strictly focused on data storage and retrieval | V-09 (Dev 2: V-02) | High Cohesion | eaeadd49 | Jhonatan Galindo (Dev 2) |
 | PersonRepository | Removed console print statements (System.out.println) from saveCustomer, loadCustomer, saveSeller, and loadSeller to decouple persistence from console I/O | V-09 / FD-08 (Dev 2: V-03) | High Cohesion | da2f116d | Jhonatan Galindo (Dev 2) |
 | ReturnService, ConsoleMenu | Removed console confirmation print from ReturnService.registerReturn() and delegated display to ConsoleMenu upon successful return processing | V-10 (Dev 2: V-04) | High Cohesion | adf2e566 | Jhonatan Galindo (Dev 2) & Sergio Guerrero (Tech Lead) |
-
+| ReturnService | viewAllReturns() now returns an unmodifiable list or defensive copy (new ArrayList<>(returns)) to protect the internal collection from external modification | V-16 (Dev 2: V-11) | Protected Variations | 3927da17 | Jhonatan Galindo (Dev 2) |
 ---
 
 ## 4. Final Post-Refactor Verification Evidence
