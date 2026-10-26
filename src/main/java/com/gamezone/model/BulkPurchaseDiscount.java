@@ -1,7 +1,7 @@
 package com.gamezone.model;
-
+ 
 import java.time.LocalDate;
-
+ 
 /**
  * Represents a bulk purchase discount promotion commercialized by GameZone Unicesar.
  *
@@ -9,11 +9,10 @@ import java.time.LocalDate;
  * of the sale only when the sale includes at least a minimum number of
  * product units.
  */
-public class BulkPurchaseDiscount extends Promotion {
-
+public class BulkPurchaseDiscount extends PercentageBasedPromotion {
+ 
     private int minimumQuantity;
-    private double percentage;
-
+ 
     /**
      * Creates a new bulk purchase discount promotion.
      *
@@ -32,7 +31,7 @@ public class BulkPurchaseDiscount extends Promotion {
         setMinimumQuantity(minimumQuantity);
         setPercentage(percentage);
     }
-
+ 
     /**
      * Returns the minimum number of product units required for the discount to apply.
      *
@@ -41,7 +40,7 @@ public class BulkPurchaseDiscount extends Promotion {
     public int getMinimumQuantity() {
         return minimumQuantity;
     }
-
+ 
     /**
      * Sets the minimum number of product units required for the discount to apply.
      *
@@ -54,29 +53,9 @@ public class BulkPurchaseDiscount extends Promotion {
         }
         this.minimumQuantity = minimumQuantity;
     }
-
-    /**
-     * Returns the discount percentage.
-     *
-     * @return the discount percentage
-     */
-    public double getPercentage() {
-        return percentage;
-    }
-
-    /**
-     * Sets the discount percentage.
-     *
-     * @param percentage the new discount percentage, between 0 and 100
-     * @throws IllegalArgumentException if the percentage is not between 0 and 100
-     */
-    public void setPercentage(double percentage) {
-        if (percentage < 0 || percentage > 100) {
-            throw new IllegalArgumentException("Percentage must be between 0 and 100");
-        }
-        this.percentage = percentage;
-    }
-
+ 
+ 
+ 
     /**
      * Calculates the discount as the configured percentage of the sale's
      * total, but only when the sale includes at least the minimum required
@@ -94,6 +73,6 @@ public class BulkPurchaseDiscount extends Promotion {
         if (totalQuantity < minimumQuantity) {
             return 0.0;
         }
-        return sale.calculateTotal() * percentage / 100;
+        return applyPercentage(sale.calculateTotal());
     }
 }

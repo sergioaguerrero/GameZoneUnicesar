@@ -9,7 +9,7 @@ import java.time.LocalDate;
  * specific target category ("VIDEOGAME", "CONSOLE" or "ACCESSORY") included in
  * the sale. Products of any other category are not affected.
  */
-public class CategoryDiscount extends Promotion {
+public class CategoryDiscount extends PercentageBasedPromotion {
  
     /**
      * Category eligible for a video game discount.
@@ -26,7 +26,6 @@ public class CategoryDiscount extends Promotion {
      */
     public static final String CATEGORY_ACCESSORY = Product.CATEGORY_ACCESSORY;
  
-    private double percentage;
     private String targetCategory;
  
     /**
@@ -49,28 +48,7 @@ public class CategoryDiscount extends Promotion {
         setTargetCategory(targetCategory);
     }
  
-    /**
-     * Returns the discount percentage.
-     *
-     * @return the discount percentage
-     */
-    public double getPercentage() {
-        return percentage;
-    }
  
-    /**
-     * Sets the discount percentage.
-     *
-     * @param percentage the new discount percentage, between 0 and 100
-     * @throws IllegalArgumentException if the percentage is not between 0 and
-     * 100
-     */
-    public void setPercentage(double percentage) {
-        if (percentage < 0 || percentage > 100) {
-            throw new IllegalArgumentException("Percentage must be between 0 and 100");
-        }
-        this.percentage = percentage;
-    }
  
     /**
      * Returns the category this discount applies to.
@@ -115,7 +93,7 @@ public class CategoryDiscount extends Promotion {
                 categorySubtotal += item.calculateSubtotal();
             }
         }
-        return categorySubtotal * percentage / 100;
+        return applyPercentage(categorySubtotal);
     }
  
     /**
