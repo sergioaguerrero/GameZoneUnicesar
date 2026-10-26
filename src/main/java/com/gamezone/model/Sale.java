@@ -213,6 +213,39 @@ public class Sale {
     }
 
     /**
+     * Calculates the ratio of the applied discount over the subtotal of the sale items.
+     * This allows callers (e.g. returns processing) to compute proportional item discounts
+     * without duplicating financial calculation formulas.
+     *
+     * @return the discount ratio between 0.0 and 1.0, or 0.0 if the subtotal is zero or negative
+     */
+    public double getDiscountRatio() {
+        double subtotal = calculateSubtotal();
+        if (subtotal <= 0.0) {
+            return 0.0;
+        }
+        return discountAmount / subtotal;
+    }
+
+    /**
+     * Calculates the total quantity of units purchased across all sale items.
+     * This provides a centralized Information Expert query for volume evaluations.
+     *
+     * @return the total count of product units in this sale
+     */
+    public int getTotalQuantity() {
+        int totalUnits = 0;
+        if (items != null) {
+            for (SaleItem item : items) {
+                if (item != null) {
+                    totalUnits += item.getQuantity();
+                }
+            }
+        }
+        return totalUnits;
+    }
+
+    /**
      * Checks whether this sale is still within the return period.
      *
      * A sale can be returned only while the current date is within 30 calendar
