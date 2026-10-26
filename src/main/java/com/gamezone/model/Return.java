@@ -1,10 +1,10 @@
 package com.gamezone.model;
-
+ 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+ 
 /**
  * Represents a product return commercialized by GameZone Unicesar.
  *
@@ -17,14 +17,14 @@ import java.util.List;
  * once the return is created, so there is no setter for it.
  */
 public class Return {
-
+ 
     private final String returnId;
     private final LocalDate returnDate;
     private final Sale originalSale;
     private final List<Product> returnedProducts;
     private final String reason;
     private double refundAmount;
-
+ 
     /**
      * Creates a new return.
      *
@@ -61,7 +61,7 @@ public class Return {
         this.reason = reason.trim();
         this.refundAmount = 0.0;
     }
-
+ 
     /**
      * Returns the unique identifier of the return.
      *
@@ -70,7 +70,7 @@ public class Return {
     public String getReturnId() {
         return returnId;
     }
-
+ 
     /**
      * Returns the date on which the return was registered.
      *
@@ -79,7 +79,7 @@ public class Return {
     public LocalDate getReturnDate() {
         return returnDate;
     }
-
+ 
     /**
      * Returns the original sale this return references.
      *
@@ -88,7 +88,7 @@ public class Return {
     public Sale getOriginalSale() {
         return originalSale;
     }
-
+ 
     /**
      * Returns the products being returned.
      *
@@ -100,7 +100,7 @@ public class Return {
     public List<Product> getReturnedProducts() {
         return Collections.unmodifiableList(returnedProducts);
     }
-
+ 
     /**
      * Returns the reason given for the return.
      *
@@ -109,7 +109,7 @@ public class Return {
     public String getReason() {
         return reason;
     }
-
+ 
     /**
      * Returns the amount refunded to the customer.
      * This value is zero until {@link #calculateRefundAmount()} is invoked.
@@ -119,7 +119,7 @@ public class Return {
     public double getRefundAmount() {
         return refundAmount;
     }
-
+ 
     /**
      * Calculates the refund amount as the sum of the proportional value of each
      * returned product.
@@ -138,7 +138,7 @@ public class Return {
         this.refundAmount = total;
         return this.refundAmount;
     }
-
+ 
     /**
      * Calculates the refund amount as the sum of the proportional value of each
      * returned product plus the refundable cost of the cancelled warranties.
@@ -156,20 +156,18 @@ public class Return {
         this.refundAmount += warrantyRefund;
         return this.refundAmount;
     }
-
+ 
     /**
      * Calculates the proportional refund for a single returned product,
-     * applying the same discount ratio that applied to the original sale.
+     * applying the discount ratio provided by the original sale.
      *
      * @param product the product to calculate the refund for
      * @return the proportional refund amount for the product
      */
     private double calculateItemRefund(Product product) {
-        double subtotal = originalSale.getSubtotal();
-        double discountRatio = subtotal > 0 ? originalSale.getDiscountAmount() / subtotal : 0.0;
-        return product.getPrice() * (1 - discountRatio);
+        return product.getPrice() * (1 - originalSale.getDiscountRatio());
     }
-
+ 
     /**
      * Builds a formatted receipt, in Spanish, with the detail of this return:
      * identifier, date, reference to the original sale, and for each returned
