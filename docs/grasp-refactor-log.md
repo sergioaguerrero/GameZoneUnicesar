@@ -82,6 +82,9 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | WarrantyService | Removed unused getWarranties() and setWarranties() to protect internal mutable state | V-17 | Low Coupling | cd3e2a3 | Sergio Guerrero (Tech Lead) |
 | SaleRepository | Removed console output messages (System.out.println) from saveSales and loadSales | V-18 | High Cohesion | 9c06809 | Sergio Guerrero (Tech Lead) |
 | SaleRepository | Replaced hardcoded file path constant with default and parameterized constructors | V-21 | Protected Variations | 9c06809 | Sergio Guerrero (Tech Lead) |
+| Product | Added category constants and abstract getCategory() so each product type declares its own category | V-03 | Polymorphism | 6901c66 | Isaac Mattos (Dev 1) |
+| VideoGame, Console, Accessory | Implemented getCategory() returning their category code (Controller, Cable and Memory inherit it from Accessory) | V-03 | Polymorphism | 6901c66 | Isaac Mattos (Dev 1) |
+| CategoryDiscount | Replaced the instanceof checks in belongsToTargetCategory() with a comparison against product.getCategory() | V-03 | Polymorphism | 6901c66 | Isaac Mattos (Dev 1) |
 
 ---
 
