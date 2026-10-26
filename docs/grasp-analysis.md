@@ -45,10 +45,10 @@ During the individual audits and cross-boundary review, several boundary violati
 2. **Case 2: `BulkPurchaseDiscount` (Developer 1) aggregating `Sale` unit quantities (Technical Lead) [V-02]**
    - *Manifestation:* In `BulkPurchaseDiscount.calculateDiscount` (lines 90–93), the discount loops over `sale.getItems()` accumulating `getQuantity()` manually to check the bulk volume threshold.
    - *Consolidation & Assignment:* Registered as `V-02`. The responsibility to calculate total purchased items belongs to `Sale` (Information Expert). Technical Lead implements `Sale.getTotalQuantity()`, and Developer 1 updates `BulkPurchaseDiscount` to consume it.
-3. **Case 3: `ReturnService` (Developer 2) and `SaleService` (Technical Lead) Console Output [V-04 / V-TL-02]**
+3. **Case 3: `ReturnService` (Developer 2) and `SaleService` (Technical Lead) Console Output [V-04 / V-04]**
    - *Manifestation:* Service-layer methods printing directly to standard console streams (`ReturnService.registerReturn` line 155; `SaleService.registerSale` line 271).
    - *Consolidation & Assignment:* Registered under High Cohesion. Each respective service owner removes console statements from the service method, while Technical Lead ensures `ConsoleMenu` displays appropriate confirmation messages upon successful service invocation.
-4. **Case 4: Category Resolution via Polymorphism across Boundaries [V-03 / V-TL-01 / V-08]**
+4. **Case 4: Category Resolution via Polymorphism across Boundaries [V-03 / V-01 / V-08]**
    - *Manifestation:* `SaleService`, `ConsoleMenu`, `ReturnService`, and `CategoryDiscount` each independently checked `product instanceof VideoGame / Console / Accessory`.
    - *Consolidation & Assignment:* Developer 1 adds abstract `getCategory()` in `Product` (overridden in subtypes); Technical Lead refactors `SaleService` and `ConsoleMenu`; Developer 2 refactors `ReturnService`.
 
@@ -127,3 +127,4 @@ The refactoring order is strictly prioritized based on architectural dependency 
 - Work occurs sequentially or on isolated sub-features branching off `feature/grasp-refactor`.
 - Commits are atomic and use Conventional Commits (`refactor: ... (V-XX)` and `docs: ...`).
 - Whenever a shared class (`Sale`, `Product`, `ConsoleMenu`) requires edits from multiple members, the owning member introduces the interface method first, pushes the commit, and informs the team before the consumer member integrates against it.
+

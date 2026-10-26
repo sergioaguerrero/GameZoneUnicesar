@@ -35,7 +35,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | Verdict | Violations |
 |---|---|
-| **Violation** | V-TL-01 |
+| **Violation** | V-01 |
 
 ### Correctly Applied
 
@@ -49,7 +49,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | ID | Module | Evidence | Explanation | Consequence | Proposed Solution | Other Member's Code |
 |---|---|---|---|---|---|---|
-| V-TL-01 | Sales / Accessories (Req. 1) | `SaleService.registerSale`, lines 213–219: `Optional<Accessory> accessoryOpt = accessoryService.findById(productId); if (item.getProduct() instanceof Accessory \|\| accessoryOpt.isPresent()) ... else productService.hasEnoughStock...` | Stock query checks concrete type using `instanceof` and duplicate service calls rather than querying a unified inventory or delegating polymorphic behavior to the item. | Tight coupling between `SaleService` and individual catalog services; adding new item categories requires touching `SaleService`. | Unify inventory verification or use `Product.getCategory()` / inventory abstraction. | No |
+| V-01 | Sales / Accessories (Req. 1) | `SaleService.registerSale`, lines 213–219: `Optional<Accessory> accessoryOpt = accessoryService.findById(productId); if (item.getProduct() instanceof Accessory \|\| accessoryOpt.isPresent()) ... else productService.hasEnoughStock...` | Stock query checks concrete type using `instanceof` and duplicate service calls rather than querying a unified inventory or delegating polymorphic behavior to the item. | Tight coupling between `SaleService` and individual catalog services; adding new item categories requires touching `SaleService`. | Unify inventory verification or use `Product.getCategory()` / inventory abstraction. | No |
 
 ---
 
@@ -85,7 +85,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | Verdict | Violations |
 |---|---|
-| **Violation** | V-TL-02 |
+| **Violation** | V-02 |
 
 ### Correctly Applied
 
@@ -98,7 +98,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | ID | Module | Evidence | Explanation | Consequence | Proposed Solution | Other Member's Code |
 |---|---|---|---|---|---|---|
-| V-TL-02 | Warranties (Req. 4) | `WarrantyService.getWarranties` (lines 212–215) and `setWarranties` (lines 220–223) | Unused getter/setter authored during integration exposing the internal warranty collection directly. | Breaks encapsulation and allows external classes to mutate internal service state without domain checks. | Eliminate `getWarranties` and `setWarranties` as no callers require them. | No |
+| V-02 | Warranties (Req. 4) | `WarrantyService.getWarranties` (lines 212–215) and `setWarranties` (lines 220–223) | Unused getter/setter authored during integration exposing the internal warranty collection directly. | Breaks encapsulation and allows external classes to mutate internal service state without domain checks. | Eliminate `getWarranties` and `setWarranties` as no callers require them. | No |
 
 ---
 
@@ -106,7 +106,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | Verdict | Violations |
 |---|---|
-| **Violation** | V-TL-03, V-TL-04 |
+| **Violation** | V-03, V-04 |
 
 ### Correctly Applied
 
@@ -119,8 +119,8 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | ID | Module | Evidence | Explanation | Consequence | Proposed Solution | Other Member's Code |
 |---|---|---|---|---|---|---|
-| V-TL-03 | Sales (Workshop 1) | `SaleRepository.saveSales` line 56 (`System.out.println("Sales saved successfully in " + saleCSV);`) and line 140 (`System.out.println("Sales successfully loaded from " + saleCSV);`) | Persistence repository directly emits status messages to standard console output. | Intertwines persistence mechanisms with user-interface console printing. | Remove `System.out.println` from repository methods; handle user-facing feedback at UI level. | No |
-| V-TL-04 | Sales (Workshop 1) | `SaleService.registerSale` line 271 (`System.out.println("Venta registrada exitosamente");`) and validation errors printed via `System.err.println` (lines 186, 192, 202, 222, 236) | Business service class directly writes to console output streams and suppresses domain exceptions instead of propagating them to the UI layer. | Prevents `ConsoleMenu` from applying its differentiated exception handlers (lines 596–604) and couples service to console. | Remove console prints from `SaleService` and let exceptions propagate naturally to `ConsoleMenu`. | Yes (`ConsoleMenu` handles exceptions) |
+| V-03 | Sales (Workshop 1) | `SaleRepository.saveSales` line 56 (`System.out.println("Sales saved successfully in " + saleCSV);`) and line 140 (`System.out.println("Sales successfully loaded from " + saleCSV);`) | Persistence repository directly emits status messages to standard console output. | Intertwines persistence mechanisms with user-interface console printing. | Remove `System.out.println` from repository methods; handle user-facing feedback at UI level. | No |
+| V-04 | Sales (Workshop 1) | `SaleService.registerSale` line 271 (`System.out.println("Venta registrada exitosamente");`) and validation errors printed via `System.err.println` (lines 186, 192, 202, 222, 236) | Business service class directly writes to console output streams and suppresses domain exceptions instead of propagating them to the UI layer. | Prevents `ConsoleMenu` from applying its differentiated exception handlers (lines 596–604) and couples service to console. | Remove console prints from `SaleService` and let exceptions propagate naturally to `ConsoleMenu`. | Yes (`ConsoleMenu` handles exceptions) |
 
 ---
 
@@ -128,7 +128,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | Verdict | Violations |
 |---|---|
-| **Violation** | V-TL-05 |
+| **Violation** | V-05 |
 
 ### Correctly Applied
 
@@ -140,7 +140,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | ID | Module | Evidence | Explanation | Consequence | Proposed Solution | Other Member's Code |
 |---|---|---|---|---|---|---|
-| V-TL-05 | Sales / Accessories / Warranties | `SaleService.applyWarranties` lines 312–318 (`if (product instanceof Console)`); `SaleService.isConsoleInItems` lines 334–336 (`if (item.getProduct() instanceof Console)`); `SaleService.registerSale` lines 260–264 (`instanceof Accessory`); `ConsoleMenu` lines 577–580 (`item instanceof Console`) | Business rules for warranties and inventory updates inspect concrete product subtypes with procedural `instanceof` checks. | Adding a new warrantable item or sellable subtype forces changes across multiple service and UI methods. | Utilize polymorphic discriminator or method `Product.getCategory()` introduced in Developer 1's V-03. | No |
+| V-05 | Sales / Accessories / Warranties | `SaleService.applyWarranties` lines 312–318 (`if (product instanceof Console)`); `SaleService.isConsoleInItems` lines 334–336 (`if (item.getProduct() instanceof Console)`); `SaleService.registerSale` lines 260–264 (`instanceof Accessory`); `ConsoleMenu` lines 577–580 (`item instanceof Console`) | Business rules for warranties and inventory updates inspect concrete product subtypes with procedural `instanceof` checks. | Adding a new warrantable item or sellable subtype forces changes across multiple service and UI methods. | Utilize polymorphic discriminator or method `Product.getCategory()` introduced in Developer 1's V-03. | No |
 
 ---
 
@@ -174,7 +174,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | Verdict | Violations |
 |---|---|
-| **Violation** | V-TL-06 |
+| **Violation** | V-06 |
 
 ### Correctly Applied
 
@@ -186,7 +186,7 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | ID | Module | Evidence | Explanation | Consequence | Proposed Solution | Other Member's Code |
 |---|---|---|---|---|---|---|
-| V-TL-06 | Sales (Workshop 1) | `SaleRepository.saleCSV` line 17 (`private static final String saleCSV = "data/sales.csv";`) | Hardcoded file storage path embedded directly as a constant inside repository. | Prevents configurable storage locations or test-specific directory redirections. | Introduce configurable constructor parameter for storage path while providing a default constructor for production compatibility. | No |
+| V-06 | Sales (Workshop 1) | `SaleRepository.saleCSV` line 17 (`private static final String saleCSV = "data/sales.csv";`) | Hardcoded file storage path embedded directly as a constant inside repository. | Prevents configurable storage locations or test-specific directory redirections. | Introduce configurable constructor parameter for storage path while providing a default constructor for production compatibility. | No |
 
 ---
 
@@ -208,19 +208,20 @@ The scope follows the responsibility matrix in Section 4 of the Requirement 7 sp
 
 | Pattern | Verdict | Violations |
 |---|---|---|
-| Information Expert | Violation | V-TL-01 |
+| Information Expert | Violation | V-01 |
 | Creator | Correct | — |
 | Controller | Correct | — |
-| Low Coupling | Violation | V-TL-02 |
-| High Cohesion | Violation | V-TL-03, V-TL-04 |
-| Polymorphism | Violation | V-TL-05 |
+| Low Coupling | Violation | V-02 |
+| High Cohesion | Violation | V-03, V-04 |
+| Polymorphism | Violation | V-05 |
 | Pure Fabrication | Correct | — |
 | Indirection | Correct | — |
-| Protected Variations | Violation | V-TL-06 |
+| Protected Variations | Violation | V-06 |
 
 | Summary Metric | Count |
 |---|---|
 | Total Patterns Audited | 9 |
 | Patterns with Violations | 5 (Information Expert, Low Coupling, High Cohesion, Polymorphism, Protected Variations) |
 | Patterns Correct | 4 (Creator, Controller, Pure Fabrication, Indirection) |
-| Total Identified Violations | 6 (V-TL-01 through V-TL-06) |
+| Total Identified Violations | 6 (V-01 through V-06) |
+
