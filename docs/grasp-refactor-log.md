@@ -92,6 +92,7 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | PercentageDiscount, CategoryDiscount, BulkPurchaseDiscount | Now extend PercentageBasedPromotion; removed their duplicated percentage field, getter, setter and validation | V-05 | Protected Variations | 2e538c7 | Isaac Mattos (Dev 1) |
 | BulkPurchaseDiscount | calculateDiscount() now asks the sale for its total units with Sale.getTotalQuantity() instead of iterating the sale items | V-02 | Information Expert | d56aeb9 | Isaac Mattos (Dev 1) |
 | Return | calculateItemRefund() now uses Sale.getDiscountRatio() instead of combining the sale subtotal and discount itself | V-01 | Information Expert | 52cf8e2 | Isaac Mattos (Dev 1) |
+| Sale | canBeReturned() now delegates to the new canBeReturned(LocalDate) overload, and the 30-day limit is the named constant RETURN_PERIOD_DAYS | V-06 | Protected Variations | b797c0e | Isaac Mattos (Dev 1) |
 
 ---
 
