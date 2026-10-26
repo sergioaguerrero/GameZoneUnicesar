@@ -177,8 +177,8 @@ public class ReturnService {
      *
      * @return the list containing all returns
      */
-    public List<Return> viewAllReturns(){
-        return returns;
+    public List<Return> viewAllReturns() {
+        return new ArrayList<>(returns);
     }
 
     /**
