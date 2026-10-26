@@ -124,7 +124,8 @@ public class Sale {
     }
 
     /**
-     * Calculates the subtotal of the sale items before discounts and warranties.
+     * Calculates the subtotal of the sale items before discounts and
+     * warranties.
      *
      * @return the items subtotal amount
      */
@@ -142,9 +143,9 @@ public class Sale {
     }
 
     /**
-     * Calculates the final amount the customer has to pay: the items
-     * subtotal, minus the applied promotion discount, plus the additional
-     * cost of the extended warranties selected for this sale.
+     * Calculates the final amount the customer has to pay: the items subtotal,
+     * minus the applied promotion discount, plus the additional cost of the
+     * extended warranties selected for this sale.
      *
      * @return the final total of the sale
      */
@@ -213,11 +214,13 @@ public class Sale {
     }
 
     /**
-     * Calculates the ratio of the applied discount over the subtotal of the sale items.
-     * This allows callers (e.g. returns processing) to compute proportional item discounts
-     * without duplicating financial calculation formulas.
+     * Calculates the ratio of the applied discount over the subtotal of the
+     * sale items. This allows callers (e.g. returns processing) to compute
+     * proportional item discounts without duplicating financial calculation
+     * formulas.
      *
-     * @return the discount ratio between 0.0 and 1.0, or 0.0 if the subtotal is zero or negative
+     * @return the discount ratio between 0.0 and 1.0, or 0.0 if the subtotal is
+     * zero or negative
      */
     public double getDiscountRatio() {
         double subtotal = calculateSubtotal();
@@ -229,7 +232,8 @@ public class Sale {
 
     /**
      * Calculates the total quantity of units purchased across all sale items.
-     * This provides a centralized Information Expert query for volume evaluations.
+     * This provides a centralized Information Expert query for volume
+     * evaluations.
      *
      * @return the total count of product units in this sale
      */
@@ -246,16 +250,34 @@ public class Sale {
     }
 
     /**
+     * Number of calendar days, counted from the sale date, during which the
+     * sale can be returned.
+     */
+    private static final int RETURN_PERIOD_DAYS = 30;
+
+    /**
      * Checks whether this sale is still within the return period.
      *
-     * A sale can be returned only while the current date is within 30 calendar
-     * days of the sale date, inclusive.
+     * A sale can be returned only while the current date is within
+     * {@value #RETURN_PERIOD_DAYS} calendar days of the sale date, inclusive.
      *
-     * @return true if the sale is still within the 30-day return window, false
+     * @return true if the sale is still within the return window, false
      * otherwise
      */
     public boolean canBeReturned() {
-        long daysSinceSale = java.time.temporal.ChronoUnit.DAYS.between(this.date, LocalDate.now());
-        return daysSinceSale >= 0 && daysSinceSale <= 30;
+        return canBeReturned(LocalDate.now());
     }
+
+    /**
+     * Checks whether this sale is within the return period on the given date.
+     *
+     * @param referenceDate the date on which the return is evaluated
+     * @return true if the reference date is between the sale date and
+     * {@value #RETURN_PERIOD_DAYS} days after it, inclusive; false otherwise
+     */
+    public boolean canBeReturned(LocalDate referenceDate) {
+        long daysSinceSale = java.time.temporal.ChronoUnit.DAYS.between(this.date, referenceDate);
+        return daysSinceSale >= 0 && daysSinceSale <= RETURN_PERIOD_DAYS;
+    }
+
 }
