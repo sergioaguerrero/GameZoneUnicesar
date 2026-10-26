@@ -152,7 +152,6 @@ public class ReturnService {
         Return newReturn = new Return(returnId, LocalDate.now(), originalSale, productsToReturn, reason);
         newReturn.calculateRefundAmount(warrantyRefund);
         returns.add(newReturn);
-        System.out.println("Devolución registrada exitosamente.");
         returnRepository.saveAll(returns);
         return newReturn;
     }
