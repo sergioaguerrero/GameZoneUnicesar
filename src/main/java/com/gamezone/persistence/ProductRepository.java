@@ -1,9 +1,7 @@
 package com.gamezone.persistence;
 
 import com.gamezone.exceptions.PersistenceException;
-import com.gamezone.model.Console;
 import com.gamezone.model.Product;
-import com.gamezone.model.VideoGame;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,7 +11,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Handles file-based persistence of {@link Product} instances as CSV records,
@@ -23,8 +23,26 @@ import java.util.List;
 public class ProductRepository {
 
     private static final String FILE_PATH = "data/products.csv";
-    private static final String VIDEOGAME_TYPE = "VIDEOGAME";
-    private static final String CONSOLE_TYPE = "CONSOLE";
+
+    private final Map<String, ProductCsvMapper> mappers = new LinkedHashMap<>();
+
+    /**
+     * Creates the repository and registers one CSV mapper per supported product
+     * type.
+     */
+    public ProductRepository() {
+        register(new VideoGameCsvMapper());
+        register(new ConsoleCsvMapper());
+    }
+
+    /**
+     * Registers a mapper under its discriminator.
+     *
+     * @param mapper the mapper to register
+     */
+    private void register(ProductCsvMapper mapper) {
+        mappers.put(mapper.getType(), mapper);
+    }
 
     /**
      * Overwrites the CSV file with the given list of products.
@@ -74,44 +92,33 @@ public class ProductRepository {
     }
 
     /**
-     * Converts a single product into its CSV line representation, using a
-     * discriminator column ("VIDEOGAME" or "CONSOLE") followed by the product's
-     * attributes.
+     * Converts a single product into its CSV line representation: the
+     * discriminator, the common columns and the columns provided by the mapper
+     * of the product's category.
      *
      * @param product the product to convert
      * @return the CSV line representing the product
-     * @throws IllegalArgumentException if the product's concrete type is not
-     * supported
+     * @throws IllegalArgumentException if no mapper is registered for the
+     * product's category
      */
     private String toCsvLine(Product product) {
-        if (product instanceof VideoGame videoGame) {
-            return String.join(",",
-                    VIDEOGAME_TYPE,
-                    videoGame.getProductId(),
-                    videoGame.getTitle(),
-                    String.valueOf(videoGame.getPrice()),
-                    String.valueOf(videoGame.getStockQuantity()),
-                    videoGame.getPlatform(),
-                    videoGame.getGenre(),
-                    videoGame.getAgeRating());
+        ProductCsvMapper mapper = mappers.get(product.getCategory());
+        if (mapper == null) {
+            throw new IllegalArgumentException("Unsupported product type: " + product.getClass());
         }
-        if (product instanceof Console console) {
-            return String.join(",",
-                    CONSOLE_TYPE,
-                    console.getProductId(),
-                    console.getTitle(),
-                    String.valueOf(console.getPrice()),
-                    String.valueOf(console.getStockQuantity()),
-                    console.getBrand(),
-                    console.getModel(),
-                    String.valueOf(console.getGeneration()));
-        }
-        throw new IllegalArgumentException("Unsupported product type: " + product.getClass());
+        List<String> columns = new ArrayList<>(List.of(
+                mapper.getType(),
+                product.getProductId(),
+                product.getTitle(),
+                String.valueOf(product.getPrice()),
+                String.valueOf(product.getStockQuantity())));
+        columns.addAll(List.of(mapper.toSpecificFields(product)));
+        return String.join(",", columns);
     }
 
     /**
      * Parses a single CSV line and reconstructs the corresponding concrete
-     * {@link Product} subclass based on its discriminator column.
+     * {@link Product} through the mapper registered for its discriminator.
      *
      * @param line the CSV line to parse
      * @return the reconstructed product
@@ -126,14 +133,10 @@ public class ProductRepository {
         double price = Double.parseDouble(fields[3]);
         int stockQuantity = Integer.parseInt(fields[4]);
 
-        if (VIDEOGAME_TYPE.equals(type)) {
-            return new VideoGame(productId, title, price, stockQuantity,
-                    fields[5], fields[6], fields[7]);
+        ProductCsvMapper mapper = mappers.get(type);
+        if (mapper == null) {
+            throw new IllegalArgumentException("Unknown product type in CSV: " + type);
         }
-        if (CONSOLE_TYPE.equals(type)) {
-            return new Console(productId, title, price, stockQuantity,
-                    fields[5], fields[6], Integer.parseInt(fields[7]));
-        }
-        throw new IllegalArgumentException("Unknown product type in CSV: " + type);
+        return mapper.fromCsvFields(productId, title, price, stockQuantity, fields);
     }
 }
