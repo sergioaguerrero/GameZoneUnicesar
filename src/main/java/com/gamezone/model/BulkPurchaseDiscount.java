@@ -66,10 +66,7 @@ public class BulkPurchaseDiscount extends PercentageBasedPromotion {
      */
     @Override
     public double calculateDiscount(Sale sale) {
-        int totalQuantity = 0;
-        for (SaleItem item : sale.getItems()) {
-            totalQuantity += item.getQuantity();
-        }
+        int totalQuantity = sale.getTotalQuantity();
         if (totalQuantity < minimumQuantity) {
             return 0.0;
         }
