@@ -99,6 +99,7 @@ Every violation identified in `docs/grasp-audit/consolidated-audit.md` (`V-01` t
 | Customer | Removed unused purchaseHistory collection, constructor with history, getPurchaseHistory() and addPurchaseHistory() to eliminate dead bidirectional coupling with Sale | V-01 | Low Coupling | 1440a81c | Jhonatan Galindo (Dev 2) |
 | PersonRepository | Removed unused deleteSeller() and deleteCustomer() methods to keep persistence strictly focused on data storage and retrieval | V-09 (Dev 2: V-02) | High Cohesion | eaeadd49 | Jhonatan Galindo (Dev 2) |
 | PersonRepository | Removed console print statements (System.out.println) from saveCustomer, loadCustomer, saveSeller, and loadSeller to decouple persistence from console I/O | V-09 / FD-08 (Dev 2: V-03) | High Cohesion | da2f116d | Jhonatan Galindo (Dev 2) |
+| ReturnService, ConsoleMenu | Removed console confirmation print from ReturnService.registerReturn() and delegated display to ConsoleMenu upon successful return processing | V-10 (Dev 2: V-04) | High Cohesion | adf2e566 | Jhonatan Galindo (Dev 2) & Sergio Guerrero (Tech Lead) |
 
 ---
 
